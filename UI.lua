@@ -1,5 +1,6 @@
 local TweenService = game:GetService("TweenService")
 local HttpService = game:GetService("HttpService")
+local UIS = game:GetService("UserInputService")
 local CoreGui = game:GetService("CoreGui")
 
 local NH_UI = {}
@@ -27,6 +28,13 @@ function NH_UI:NewWindow(name: string, icon: string, bind: string)
 	local TabsFrame = Instance.new("ScrollingFrame", Background)
 	local TabsLayout = Instance.new("UIListLayout", TabsFrame)
 	local MinimizeCorner = Instance.new("UICorner", Minimize)
+	local ItemsFrame = Instance.new("ScrollingFrame", Background)
+	local ItemsLayout = Instance.new("UIGridLayout", ItemsFrame)
+	local InfoMain = Instance.new("ImageLabel", ScreenGui)
+	local InfoFrame = Instance.new("Frame", InfoMain)
+	local InfoFrameCorner = Instance.new("UICorner", InfoFrame)
+	local InfoText = Instance.new("TextLabel", InfoFrame)
+	local InfoTextConstraint = Instance.new("UITextSizeConstraint", InfoText)
 	local font = Font.new("rbxasset://fonts/families/Roboto.json")
 	
 	local items = {}
@@ -139,6 +147,7 @@ function NH_UI:NewWindow(name: string, icon: string, bind: string)
 	Minimize.Font = Enum.Font.Roboto
 	Minimize.Text = "-"
 	Minimize.TextColor3 = Color3.fromRGB(190, 190, 190)
+	Minimize.AutoButtonColor = false
 	Minimize.TextScaled = true
 	Minimize.ZIndex = 10
 	
@@ -152,6 +161,51 @@ function NH_UI:NewWindow(name: string, icon: string, bind: string)
 	TabsFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
 	TabsFrame.ScrollBarThickness = 4
 	TabsFrame.ScrollingDirection = Enum.ScrollingDirection.Y
+	
+	ItemsFrame.Name = "Items"
+	ItemsFrame.BackgroundTransparency = 1
+	ItemsFrame.Position = UDim2.new(.234, 0, .113, 0)
+	ItemsFrame.Size = UDim2.new(.76, 0, .887, 0)
+	ItemsFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
+	ItemsFrame.ScrollBarThickness = 4
+	
+	ItemsLayout.CellSize = UDim2.new(.95, 0, 0, 100)
+	
+	InfoMain.Name = "InfoBox"
+	InfoMain.AnchorPoint = Vector2.new(.5,.5)
+	InfoMain.BackgroundTransparency = 1
+	InfoMain.Size = UDim2.new(.055, 40, .045, 40)
+	InfoMain.ZIndex = 999
+	InfoMain.Visible = false
+	InfoMain.Image = "rbxassetid://14001321443"
+	InfoMain.ImageColor3 = Color3.fromRGB(33, 33, 33)
+	InfoMain.ScaleType = Enum.ScaleType.Slice
+	InfoMain.SliceCenter = Rect.new(150, 150, 150, 150)
+	InfoMain.SliceScale = .99
+	
+	InfoFrame.Name = "Main"
+	InfoFrame.AnchorPoint = Vector2.new(.5, .5)
+	InfoFrame.BackgroundColor3 = Color3.fromRGB(31, 34, 40)
+	InfoFrame.Position = UDim2.new(.5, 0, .5, 0)
+	InfoFrame.Size = UDim2.new(.93, 0, .89, 0)
+	InfoFrame.ZIndex = 9999
+	
+	InfoFrameCorner.CornerRadius = UDim.new(.08, 0)
+	
+	local font = Font.new("rbxasset://fonts/families/Roboto.json")
+	font.Weight = Enum.FontWeight.Medium
+	InfoText.Name = "Text"
+	InfoText.AnchorPoint = Vector2.new(.5, .5)
+	InfoText.BackgroundTransparency = 1
+	InfoText.Position = UDim2.new(.5, 0, .5, 0)
+	InfoText.Size = UDim2.new(1, 0, .9, 0)
+	InfoText.ZIndex = 9999
+	InfoText.FontFace = font
+	InfoText.Text = "Info"
+	InfoText.TextColor3 = Color3.fromRGB(171, 171, 171)
+	InfoText.TextScaled = true
+	
+	InfoTextConstraint.MaxTextSize = 14
 	
 	local BaseSize = MainFrame.Size
 	local MinimizeDebounce = false
@@ -370,11 +424,26 @@ function NH_UI:NewWindow(name: string, icon: string, bind: string)
 		minimizeAndExpand(Background.Visible)
 	end)
 	
+	local function switchTabs(tab, tabItems)
+		for _, item in pairs(ItemsFrame:GetChildren()) do
+			if item ~= ItemsLayout then
+				item:Destroy()
+			end
+		end
+
+		for _, item in pairs(tabItems) do
+			if item[1] == "Button" then
+				tab:NewButton(item[2], item[3], item[4])
+			end
+		end
+	end
+	
 	function window:NewTab(tabName: string, info: string)
 		local tab = {}
 		
 		tabName = tabName or "Tab".. #items + 1
-		items[tabName] = {}
+		info = info or ""
+		items[tab] = {tab, {}}
 		
 		local TabFrame = Instance.new("ImageLabel", TabsFrame)
 		local TabButton = Instance.new("TextButton", TabFrame)
@@ -397,6 +466,7 @@ function NH_UI:NewWindow(name: string, icon: string, bind: string)
 		TabButton.Position = UDim2.new(.5, 0, .5, 0)
 		TabButton.Size = UDim2.new(.883, 0, .726, 0)
 		TabButton.Text = ""
+		TabButton.AutoButtonColor = false
 		
 		TabButtonCorner.CornerRadius = UDim.new(.15, 0)
 		
@@ -418,17 +488,296 @@ function NH_UI:NewWindow(name: string, icon: string, bind: string)
 		TabTextConstraint.MaxTextSize = 22
 		
 		TabButton.MouseButton1Click:Connect(function()
-			
+			switchTabs(tab, items[tab][2])
+			print(items)
 		end)
 		
-		function tab:NewButton(name: string, info: string, callback)
-			name = name or "Item".. #items[tabName] + 1
-			items[tabName][name] = {name, info, callback}
+		function tab:NewButton(name: string, info: string, callback: () -> ())
+			local button = {}
 			
+			name = name or "Item".. #items[tab][2] + 1
+			info = info or ""
+			callback = callback or function() end
 			
+			items[tab][2][name] = {"Button", name, info, callback}
+			
+			local buttonFrame = Instance.new("ImageLabel", ItemsFrame)
+			local buttonAspectRatio = Instance.new("UIAspectRatioConstraint", buttonFrame)
+			local infoButton = Instance.new("TextButton", buttonFrame)
+			local infoButtonCorner = Instance.new("UICorner", infoButton)
+			local buttonButton = Instance.new("TextButton", buttonFrame)
+			local buttonButtonCorner = Instance.new("UICorner", buttonButton)
+			local buttonButtonStroke = Instance.new("UIStroke", buttonButton)
+			local buttonTitle = Instance.new("TextLabel", buttonButton)
+			local buttonTitleConstraint = Instance.new("UITextSizeConstraint", buttonTitle)
+			
+			buttonFrame.Name = name
+			buttonFrame.BackgroundTransparency = 1
+			buttonFrame.Image = "rbxassetid://14001321443"
+			buttonFrame.ImageColor3 = Color3.fromRGB(18, 18, 18)
+			buttonFrame.ScaleType = Enum.ScaleType.Slice
+			buttonFrame.SliceCenter = Rect.new(150, 150, 150, 150)
+			
+			buttonAspectRatio.AspectRatio = 8.18
+			
+			infoButton.Name = "Info"
+			infoButton.BackgroundColor3 = Color3.fromRGB(34, 39, 39)
+			infoButton.Position = UDim2.new(.959, 0, .011, 0)
+			infoButton.Size = UDim2.new(.035, 0, .279, 0)
+			infoButton.Font = Enum.Font.Roboto
+			infoButton.Text = "?"
+			infoButton.TextColor3 = Color3.fromRGB(190, 190, 190)
+			infoButton.TextScaled = true
+			infoButton.ZIndex = 2
+			infoButton.AutoButtonColor = false
+			infoButton.Visible = (info ~= "" and true) or false
+			
+			infoButtonCorner.CornerRadius = UDim.new(1, 0)
+			
+			buttonButton.Name = "Button"
+			buttonButton.AnchorPoint = Vector2.new(.5, .5)
+			buttonButton.BackgroundColor3 = Color3.fromRGB(23, 23, 26)
+			buttonButton.Position = UDim2.new(.5, 0, .5, 0)
+			buttonButton.Size = UDim2.new(.965, 0, .726, 0)
+			buttonButton.Text = ""
+			buttonButton.AutoButtonColor = false
+			
+			buttonButtonCorner.CornerRadius = UDim.new(.15, 0)
+			
+			buttonButtonStroke.Color = Color3.fromRGB(6, 6, 6)
+			buttonButtonStroke.Thickness = 4
+			
+			local font = Font.new("rbxasset://fonts/families/Roboto.json")
+			font.Weight = Enum.FontWeight.Medium
+			buttonTitle.Name = "Title"
+			buttonTitle.BackgroundTransparency = 1
+			buttonTitle.AnchorPoint = Vector2.new(.5, .5)
+			buttonTitle.Position = UDim2.new(.502, 0, .5, 0)
+			buttonTitle.Size = UDim2.new(.947, 0, .95, 0)
+			buttonTitle.FontFace = font
+			buttonTitle.Text = name
+			buttonTitle.TextColor3 = Color3.fromRGB(214, 214, 214)
+			buttonTitle.TextScaled = true
+			
+			buttonTitleConstraint.MaxTextSize = 22
+			
+			buttonButton.MouseEnter:Connect(function()
+				buttonButton.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
+			end)
+			
+			buttonButton.MouseButton1Down:Connect(function()
+				buttonButton.BackgroundColor3 = Color3.fromRGB(20, 20, 23)
+			end)
+			
+			buttonButton.MouseLeave:Connect(function()
+				buttonButton.BackgroundColor3 = Color3.fromRGB(23, 23, 26)
+			end)
+			
+			buttonButton.MouseButton1Up:Connect(function()
+				buttonButton.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
+			end)
+			
+			infoButton.MouseEnter:Connect(function()
+				local mouse = UIS:GetMouseLocation()
+				local inset = game:GetService("GuiService"):GetGuiInset()
+				mouse = mouse - inset
+
+				-- Adjust positions by UIScale to counteract scaling
+				local posX = (mouse.X - InfoMain.Parent.AbsolutePosition.X) / UIScale.Scale
+				local posY = (mouse.Y - InfoMain.Parent.AbsolutePosition.Y - 50) / UIScale.Scale
+
+				InfoMain.Position = UDim2.new(0, posX, 0, posY)
+				InfoText.Text = info
+				InfoMain.Visible = true
+			end)
+			
+			infoButton.MouseLeave:Connect(function()
+				InfoMain.Visible = false
+			end)
+			
+			buttonButton.MouseButton1Click:Connect(function()
+				pcall(callback)
+			end)
+			
+			return button
+		end
+		
+		function tab:NewToggle(name: string, info: string, initialState: boolean, callback: () -> ())
+			local toggle = {}
+			
+			name = name or "Item".. #items[tab][2] + 1
+			info = info or ""
+			callback = callback or function() end
+			local state = initialState or false
+
+			items[tab][2][name] = {"Toggle", name, info, state, callback}
+			
+			local ToggleFrame = Instance.new("ImageLabel", ItemsFrame)
+			local ToggleAspectRatio = Instance.new("UIAspectRatioConstraint", ToggleFrame)
+			local ToggleState = Instance.new("Frame", ToggleFrame)
+			local ToggleStateCorner = Instance.new("UICorner", ToggleState)
+			local ToggleStateStroke = Instance.new("UIStroke", ToggleState)
+			local ToggleStateButton = Instance.new("TextButton", ToggleState)
+			local ToggleStateButtonCorner = Instance.new("UICorner", ToggleStateButton)
+			local InfoButton = Instance.new("TextButton", ToggleFrame)
+			local InfoButtonCorner = Instance.new("UICorner", InfoButton)
+			local ToggleButton = Instance.new("TextButton", ToggleFrame)
+			local ToggleButtonCorner = Instance.new("UICorner", ToggleButton)
+			local ToggleButtonStroke = Instance.new("UIStroke", ToggleButton)
+			local ToggleText = Instance.new("TextLabel", ToggleButton)
+			local ToggleTextConstraint = Instance.new("UITextSizeConstraint", ToggleText)
+			local switchingState = false
+			
+			ToggleFrame.Name = name
+			ToggleFrame.BackgroundTransparency = 1
+			ToggleFrame.Image = "rbxassetid://14001321443"
+			ToggleFrame.ImageColor3 = Color3.fromRGB(18, 18, 18)
+			ToggleFrame.ScaleType = Enum.ScaleType.Slice
+			ToggleFrame.SliceCenter = Rect.new(150, 150, 150, 150)
+			
+			ToggleAspectRatio.AspectRatio = 8.18
+			
+			ToggleState.Name = "State"
+			ToggleState.AnchorPoint = Vector2.new(0, .5)
+			ToggleState.BackgroundColor3 = Color3.fromRGB(39, 40, 44)
+			ToggleState.Position = UDim2.new(.719, 0, .5, 0)
+			ToggleState.Size = UDim2.new(.21, 0, .561, 0)
+			ToggleState.ZIndex = 2
+			
+			ToggleStateCorner.CornerRadius = UDim.new(.2, 0)
+			
+			ToggleStateStroke.Thickness = 2
+			
+			ToggleStateButton.Name = "Button"
+			ToggleStateButton.AutoButtonColor = false
+			ToggleStateButton.BackgroundColor3 = Color3.fromRGB(231, 72, 72)
+			ToggleStateButton.Position = UDim2.new(.5, 0, 0, 0)
+			ToggleStateButton.Size = UDim2.new(.5, 0, 1, 0)
+			ToggleStateButton.Text = ""
+			ToggleStateButton.ZIndex = 2
+			
+			ToggleStateButtonCorner.CornerRadius = UDim.new(.25, 0)
+			
+			InfoButton.Name = "Info"
+			InfoButton.BackgroundColor3 = Color3.fromRGB(34, 39, 39)
+			InfoButton.AutoButtonColor = false
+			InfoButton.Position = UDim2.new(.959, 0, .011, 0)
+			InfoButton.Size = UDim2.new(.035, 0, .279, 0)
+			InfoButton.ZIndex = 2
+			InfoButton.Font = Enum.Font.Roboto
+			InfoButton.Text = "?"
+			InfoButton.TextColor3 = Color3.fromRGB(190, 190, 190)
+			InfoButton.TextScaled = true
+			InfoButton.Visible = (info ~= "" and true) or false
+
+			
+			InfoButtonCorner.CornerRadius = UDim.new(1, 0)
+			
+			ToggleButton.Name = "Button"
+			ToggleButton.AnchorPoint = Vector2.new(.5, .5)
+			ToggleButton.AutoButtonColor = false
+			ToggleButton.BackgroundColor3 = Color3.fromRGB(23, 23, 26)
+			ToggleButton.Position = UDim2.new(.5, 0, .5, 0)
+			ToggleButton.Size = UDim2.new(.965, 0, .726, 0)
+			ToggleButton.Text = ""
+			
+			ToggleButtonCorner.CornerRadius = UDim.new(.15, 0)
+			
+			ToggleButtonStroke.Color = Color3.fromRGB(6, 6, 6)
+			ToggleButtonStroke.Thickness = 4
+			
+			local font = Font.new("rbxasset://fonts/families/Roboto.json")
+			font.Weight = Enum.FontWeight.Medium
+			ToggleText.Name = "Title"
+			ToggleText.AnchorPoint = Vector2.new(.5, .5)
+			ToggleText.BackgroundTransparency = 1
+			ToggleText.Position = UDim2.new(.369, 0, .5, 0)
+			ToggleText.Size = UDim2.new(.68, 0, .95, 0)
+			ToggleText.FontFace = font
+			ToggleText.Text = name
+			ToggleText.TextColor3 = Color3.fromRGB(214, 214, 214)
+			ToggleText.TextScaled = true
+			
+			ToggleTextConstraint.MaxTextSize = 22
+			
+			ToggleButton.MouseEnter:Connect(function()
+				ToggleButton.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
+			end)
+
+			ToggleButton.MouseButton1Down:Connect(function()
+				ToggleButton.BackgroundColor3 = Color3.fromRGB(20, 20, 23)
+			end)
+
+			ToggleButton.MouseLeave:Connect(function()
+				ToggleButton.BackgroundColor3 = Color3.fromRGB(23, 23, 26)
+			end)
+
+			ToggleButton.MouseButton1Up:Connect(function()
+				ToggleButton.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
+			end)
+
+			InfoButton.MouseEnter:Connect(function()
+				local mouse = UIS:GetMouseLocation()
+				local inset = game:GetService("GuiService"):GetGuiInset()
+				mouse = mouse - inset
+
+				-- Adjust positions by UIScale to counteract scaling
+				local posX = (mouse.X - InfoMain.Parent.AbsolutePosition.X) / UIScale.Scale
+				local posY = (mouse.Y - InfoMain.Parent.AbsolutePosition.Y - 50) / UIScale.Scale
+
+				InfoMain.Position = UDim2.new(0, posX, 0, posY)
+				InfoText.Text = info
+				InfoMain.Visible = true
+			end)
+
+			InfoButton.MouseLeave:Connect(function()
+				InfoMain.Visible = false
+			end)
+			
+			local function switchState(newState)
+				pcall(function()
+					callback(newState)
+				end)
+
+				local stateSwitchTween = TweenService:Create(
+					ToggleStateButton,
+					TweenInfo.new(.2, Enum.EasingStyle.Circular, Enum.EasingDirection.InOut),
+					{
+						["BackgroundColor3"] = (newState and Color3.fromRGB(67, 231, 100)) or Color3.fromRGB(231, 72, 72),
+						["Position"] = (newState and UDim2.new(0, 0, 0, 0)) or UDim2.new(.5, 0, 0, 0)
+					}
+				)
+				stateSwitchTween:Play()
+				stateSwitchTween.Completed:Wait()
+				switchingState = false
+			end
+			
+			ToggleButton.MouseButton1Click:Connect(function()
+				if switchingState then return end
+				switchingState = true
+				state = not state
+				
+				switchState(state)
+			end)
+			
+			ToggleStateButton.MouseButton1Click:Connect(function()
+				if switchingState then return end
+				switchingState = true
+				state = not state
+
+				switchState(state)
+			end)
+			
+			switchingState(state)
+			
+			return toggle
 		end
 		
 		return tab
+	end
+	
+	if #items > 0 then
+		switchTabs(items[1], items[1][2])
 	end
 	
 	OpenUI()
