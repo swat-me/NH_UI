@@ -121,7 +121,7 @@ function NH_UI:NewWindow(name: string, icon: string, bind: string)
 	Shadow.Size = UDim2.new(1, 40, 1, 40)
 	Shadow.ZIndex = -1
 	Shadow.Image = "rbxassetid://14001321443"
-	Shadow.ImageColor3 = Color3.fromRGB(33, 33, 33)
+	Shadow.ImageColor3 = Color3.fromRGB(13, 13, 13)
 	Shadow.ScaleType = Enum.ScaleType.Slice
 	Shadow.SliceCenter = Rect.new(150, 150, 150, 150)
 	Shadow.SliceScale = 0.99
