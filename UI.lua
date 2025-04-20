@@ -1,7 +1,6 @@
 local TweenService = game:GetService("TweenService")
 local HttpService = game:GetService("HttpService")
 local UIS = game:GetService("UserInputService")
-local CoreGui = game:GetService("CoreGui")
 
 local NH_UI = {}
 NH_UI.__index__ = NH_UI
@@ -56,8 +55,9 @@ function NH_UI:NewWindow(name: string, icon: string, bind: string)
 		ScreenGui.Parent = gethui()
 	end)
 	if not success then
+		print("No gethui")
 		success, err = pcall(function()
-			ScreenGui.Parent = CoreGui or game.Players.LocalPlayer.PlayerGui
+			ScreenGui.Parent = game.CoreGui or game.Players.LocalPlayer.PlayerGui
 		end)
 	end
 	
@@ -170,6 +170,7 @@ function NH_UI:NewWindow(name: string, icon: string, bind: string)
 	ItemsFrame.ScrollBarThickness = 4
 	
 	ItemsLayout.CellSize = UDim2.new(.95, 0, 0, 100)
+	ItemsLayout.SortOrder = Enum.SortOrder.LayoutOrder 
 	
 	InfoMain.Name = "InfoBox"
 	InfoMain.AnchorPoint = Vector2.new(.5,.5)
@@ -424,6 +425,7 @@ function NH_UI:NewWindow(name: string, icon: string, bind: string)
 		minimizeAndExpand(Background.Visible)
 	end)
 	
+	local switchingTabs = false
 	local function switchTabs(tab, tabItems)
 		for _, item in pairs(ItemsFrame:GetChildren()) do
 			if item ~= ItemsLayout then
@@ -431,11 +433,15 @@ function NH_UI:NewWindow(name: string, icon: string, bind: string)
 			end
 		end
 
-		for _, item in pairs(tabItems) do
-			if item[1] == "Button" then
-				tab:NewButton(item[2], item[3], item[4])
+		for _, itemData in ipairs(tabItems) do
+			if itemData[1] == "Button" then
+				tab:NewButton(itemData[2], itemData[3], itemData[4])
+			elseif itemData[1] == "Toggle" then
+				tab:NewToggle(itemData[2], itemData[3], itemData[4], itemData[5])
 			end
 		end
+
+		switchingTabs = false
 	end
 	
 	function window:NewTab(tabName: string, info: string)
@@ -488,8 +494,10 @@ function NH_UI:NewWindow(name: string, icon: string, bind: string)
 		TabTextConstraint.MaxTextSize = 22
 		
 		TabButton.MouseButton1Click:Connect(function()
-			switchTabs(tab, items[tab][2])
+			if switchingTabs then return end
+			switchingTabs = true
 			print(items)
+			switchTabs(tab, items[tab][2])
 		end)
 		
 		function tab:NewButton(name: string, info: string, callback: () -> ())
@@ -498,8 +506,14 @@ function NH_UI:NewWindow(name: string, icon: string, bind: string)
 			name = name or "Item".. #items[tab][2] + 1
 			info = info or ""
 			callback = callback or function() end
+			local order = #ItemsFrame:GetChildren()
 			
-			items[tab][2][name] = {"Button", name, info, callback}
+			items[tab][2][order] = {
+				"Button",
+				name,
+				info,
+				callback,
+			}
 			
 			local buttonFrame = Instance.new("ImageLabel", ItemsFrame)
 			local buttonAspectRatio = Instance.new("UIAspectRatioConstraint", buttonFrame)
@@ -582,7 +596,6 @@ function NH_UI:NewWindow(name: string, icon: string, bind: string)
 				local inset = game:GetService("GuiService"):GetGuiInset()
 				mouse = mouse - inset
 
-				-- Adjust positions by UIScale to counteract scaling
 				local posX = (mouse.X - InfoMain.Parent.AbsolutePosition.X) / UIScale.Scale
 				local posY = (mouse.Y - InfoMain.Parent.AbsolutePosition.Y - 50) / UIScale.Scale
 
@@ -609,8 +622,15 @@ function NH_UI:NewWindow(name: string, icon: string, bind: string)
 			info = info or ""
 			callback = callback or function() end
 			local state = initialState or false
+			local order = #ItemsFrame:GetChildren()
 
-			items[tab][2][name] = {"Toggle", name, info, state, callback}
+			items[tab][2][order] = {
+				"Toggle",
+				name,
+				info,
+				state,
+				callback,
+			}
 			
 			local ToggleFrame = Instance.new("ImageLabel", ItemsFrame)
 			local ToggleAspectRatio = Instance.new("UIAspectRatioConstraint", ToggleFrame)
@@ -721,7 +741,6 @@ function NH_UI:NewWindow(name: string, icon: string, bind: string)
 				local inset = game:GetService("GuiService"):GetGuiInset()
 				mouse = mouse - inset
 
-				-- Adjust positions by UIScale to counteract scaling
 				local posX = (mouse.X - InfoMain.Parent.AbsolutePosition.X) / UIScale.Scale
 				local posY = (mouse.Y - InfoMain.Parent.AbsolutePosition.Y - 50) / UIScale.Scale
 
@@ -735,6 +754,8 @@ function NH_UI:NewWindow(name: string, icon: string, bind: string)
 			end)
 			
 			local function switchState(newState)
+				items[tab][2][order] = {"Toggle", name, info, newState, callback}
+				
 				pcall(function()
 					callback(newState)
 				end)
@@ -748,27 +769,19 @@ function NH_UI:NewWindow(name: string, icon: string, bind: string)
 					}
 				)
 				stateSwitchTween:Play()
-				stateSwitchTween.Completed:Wait()
-				switchingState = false
 			end
 			
 			ToggleButton.MouseButton1Click:Connect(function()
-				if switchingState then return end
-				switchingState = true
 				state = not state
-				
 				switchState(state)
 			end)
 			
 			ToggleStateButton.MouseButton1Click:Connect(function()
-				if switchingState then return end
-				switchingState = true
 				state = not state
-
 				switchState(state)
 			end)
 			
-			switchingState(state)
+			switchState(state)
 			
 			return toggle
 		end
