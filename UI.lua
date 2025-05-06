@@ -1,229 +1,297 @@
-local TweenService = game:GetService("TweenService")
-local HttpService = game:GetService("HttpService")
+local TS = game:GetService("TweenService")
+local Http = game:GetService("HttpService")
 local UIS = game:GetService("UserInputService")
 
 local NH_UI = {}
-NH_UI.__index__ = NH_UI
+NH_UI.__index = NH_UI
+
+local function create(class, props)
+	local instance = Instance.new(class)
+	for prop, value in pairs(props) do
+		if prop ~= "Parent" then
+			if type(value) == "table" then
+				instance[prop] = UDim2.new(unpack(value))
+			else
+				instance[prop] = value
+			end
+		end
+	end
+	instance.Parent = props.Parent or game.Players.LocalPlayer.PlayerGui
+	return instance
+end
 
 function NH_UI:NewWindow(name: string, icon: string, bind: string)
 	local window = {}
 	
-	local ScreenGui = Instance.new("ScreenGui")
-	local UIScale = Instance.new("UIScale", ScreenGui)
-	local MainFrame = Instance.new("Frame", ScreenGui)
-	local AspectRatio = Instance.new("UIAspectRatioConstraint", MainFrame)
-	local MainCorner = Instance.new("UICorner", MainFrame)
-	local DragDetector = Instance.new("UIDragDetector", MainFrame)
-	local LoadingFrame = Instance.new("Frame", MainFrame)
-	local Background = Instance.new("ImageLabel", MainFrame)
-	local Shadow = Instance.new("ImageLabel", MainFrame)
-	local LoadingCorner = Instance.new("UICorner", LoadingFrame)
-	local LoadingIcon = Instance.new("ImageLabel", LoadingFrame)
-	local LoadingIconShadow = Instance.new("ImageLabel", LoadingFrame)
-	local BackgroundCorner = Instance.new("UICorner", Background)
-	local BackgroundStroke = Instance.new("UIStroke", Background)
-	local Title = Instance.new("TextLabel", MainFrame)
-	local Minimize = Instance.new("TextButton", MainFrame)
-	local TabsFrame = Instance.new("ScrollingFrame", Background)
-	local TabsLayout = Instance.new("UIListLayout", TabsFrame)
-	local MinimizeCorner = Instance.new("UICorner", Minimize)
-	local ItemsFrame = Instance.new("ScrollingFrame", Background)
-	local ItemsLayout = Instance.new("UIGridLayout", ItemsFrame)
-	local InfoMain = Instance.new("ImageLabel", ScreenGui)
-	local InfoFrame = Instance.new("Frame", InfoMain)
-	local InfoFrameCorner = Instance.new("UICorner", InfoFrame)
-	local InfoText = Instance.new("TextLabel", InfoFrame)
-	local InfoTextConstraint = Instance.new("UITextSizeConstraint", InfoText)
+	local success, err, windowParent, windowName
 	local font = Font.new("rbxasset://fonts/families/Roboto.json")
 	
-	local items = {}
-	
-	local success, err = pcall(function()
-		ScreenGui.Name = crypt.base64encode(`{math.random(100, 999)} NH {math.random(100, 999)}\0\2`)
+	-- Set the name of the window
+	success, err = pcall(function()
+		windowName = crypt.base64encode(`{math.random(100, 999)} NH {math.random(100, 999)}`)
 	end)
 	if not success then
 		success, err = pcall(function()
-			ScreenGui.Name = HttpService:GenerateGUID()
+			windowName = Http:GenerateGUID(false)
 		end)
 		if not success then warn(err) end
 	end
 	
-	ScreenGui.DisplayOrder = 9999
-	ScreenGui.ResetOnSpawn = false
-	
+	-- Get the parent for the window
 	success, err = pcall(function()
-		ScreenGui.Parent = gethui()
+		windowParent = gethui()
 	end)
 	if not success then
-		print("No gethui")
-		success, err = pcall(function()
-			ScreenGui.Parent = game.CoreGui or game.Players.LocalPlayer.PlayerGui
-		end)
+		windowParent = game.Players.LocalPlayer.PlayerGui
 	end
 	
-	ScreenGui.Parent = game.Players.LocalPlayer.PlayerGui
+	print(windowParent, windowName)
 	
-	UIScale.Scale = 0.64
+	-- Create window
+	local screenGui = create("ScreenGui", {
+		Name = windowName,
+		DisplayOrder = 9999,
+		ResetOnSpawn = false,
+		Parent = windowParent
+	})
 	
-	MainFrame.Name = "Main"
-	MainFrame.AnchorPoint = Vector2.new(.5, .5)
-	MainFrame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-	MainFrame.BackgroundTransparency = 1
-	MainFrame.Position = UDim2.new(.528, 0, .608, 0)
-	MainFrame.Size = UDim2.new(.299, 0, .374, 0)
-	MainFrame.Visible = false
+	local UIScale = create("UIScale", {
+		Scale = .64,
+		Parent = screenGui
+	})
 	
-	AspectRatio.AspectRatio = 1.55
+	local mainFrame = create("Frame", {
+		Name = "Main",
+		AnchorPoint = Vector2.new(.5, .5),
+		BackgroundColor3 = Color3.fromRGB(0, 0, 0),
+		BackgroundTransparency = 1,
+		Position = UDim2.new(.528, 0, .608, 0),
+		Size = UDim2.new(.299, 0, .374, 0),
+		Visible = false,
+		Parent = screenGui
+	})
 	
-	MainCorner.CornerRadius = UDim.new(.015, 0)
+	create("UIAspectRatioConstraint", {
+		AspectRatio = 1.55,
+		Parent = mainFrame
+	})
 	
-	LoadingFrame.Name = "Loading"
-	LoadingFrame.BackgroundColor3 = Color3.fromRGB(23, 26, 29)
-	LoadingFrame.Size = UDim2.new(1, 0, 1, 0)
-	LoadingFrame.ZIndex = 99
+	create("UICorner", {
+		CornerRadius = UDim.new(.015, 0),
+		Parent = mainFrame
+	})
 	
-	LoadingCorner.CornerRadius = UDim.new(.025, 0)
+	local loadingFrame = create("Frame", {
+		Name = "Loading",
+		BackgroundColor3 = Color3.fromRGB(23, 26, 29),
+		Size = UDim2.new(1, 0, 1, 0),
+		ZIndex = 99,
+		Parent = mainFrame
+	})
+		
+	local loadingIcon = create("ImageLabel", {
+		Name = "Icon",
+		AnchorPoint = Vector2.new(.5, .5),
+		BackgroundTransparency = 1,
+		Position = UDim2.new(.5, 0, .5, 0),
+		Size = UDim2.new(.184, 0, .285, 0),
+		ZIndex = 99,
+		Image = icon or "rbxassetid://73151158551827",
+		ImageTransparency = 1,
+		Parent = loadingFrame
+	})
 	
-	LoadingIcon.Name = "Icon"
-	LoadingIcon.AnchorPoint = Vector2.new(.5, .5)
-	LoadingIcon.BackgroundTransparency = 1
-	LoadingIcon.Position = UDim2.new(.5, 0, .5, 0)
-	LoadingIcon.Size = UDim2.new(.184, 0, .285, 0)
-	LoadingIcon.ZIndex = 99
-	LoadingIcon.Image = icon or "rbxassetid://73151158551827"
-	LoadingIcon.ImageTransparency = 1
+	local loadingIconShadow = create("ImageLabel", {
+		Name = "Shadow",
+		AnchorPoint = Vector2.new(.5, .5),
+		BackgroundTransparency = 1,
+		Position = UDim2.new(.5, 0, .5, 0),
+		Size = UDim2.new(.221, 0, .342, 0),
+		Image = "rbxassetid://131311096880569",
+		ImageColor3 = Color3.fromRGB(0,0,0),
+		ImageTransparency = 1,
+		Parent = loadingFrame
+	})
 	
-	LoadingIconShadow.Name = "Shadow"
-	LoadingIconShadow.AnchorPoint = Vector2.new(.5, .5)
-	LoadingIconShadow.BackgroundTransparency = 1
-	LoadingIconShadow.Position = UDim2.new(.5, 0, .5, 0)
-	LoadingIconShadow.Size = UDim2.new(.221, 0, .342, 0)
-	LoadingIconShadow.Image = "rbxassetid://131311096880569"
-	LoadingIconShadow.ImageColor3 = Color3.fromRGB(0,0,0)
-	LoadingIconShadow.ImageTransparency = 1
+	create("UICorner", {
+		CornerRadius = UDim.new(.025, 0),
+		Parent = loadingFrame
+	})
 	
-	Background.Name = "Background"
-	Background.AnchorPoint = Vector2.new(.5, .5)
-	Background.BackgroundColor3 = Color3.fromRGB(23, 26, 29)
-	Background.Position = UDim2.new(.5, 0, .5, 0)
-	Background.Size = UDim2.new(1, 0, 1, 0)
-	Background.ImageTransparency = 1
+	local background = create("ImageLabel", {
+		Name = "Background",
+		AnchorPoint = Vector2.new(.5, .5),
+		BackgroundColor3 = Color3.fromRGB(23, 26, 29),
+		Position = UDim2.new(.5, 0, .5, 0),
+		Size = UDim2.new(1, 0, 1, 0),
+		ImageTransparency = 1,
+		Parent = mainFrame
+	})
 	
-	BackgroundCorner.CornerRadius = UDim.new(.025, 0)
+	create("UICorner", {
+		CornerRadius = UDim.new(.025, 0),
+		Parent = background
+	})
 	
-	BackgroundStroke.Thickness = 5
-	BackgroundStroke.Color = Color3.fromRGB(5, 5, 5)
+	create("UIStroke", {
+		Thickness = 5,
+		Color = Color3.fromRGB(5, 5, 5),
+		Parent = background
+	})
 	
-	Shadow.Name = "Shadow"
-	Shadow.AnchorPoint = Vector2.new(.5, .5)
-	Shadow.BackgroundTransparency = 1
-	Shadow.Position = UDim2.new(.5, 0, .5, 0)
-	Shadow.Size = UDim2.new(1, 40, 1, 40)
-	Shadow.ZIndex = -1
-	Shadow.Image = "rbxassetid://14001321443"
-	Shadow.ImageColor3 = Color3.fromRGB(13, 13, 13)
-	Shadow.ScaleType = Enum.ScaleType.Slice
-	Shadow.SliceCenter = Rect.new(150, 150, 150, 150)
-	Shadow.SliceScale = 0.99
+	create("UIDragDetector", {Parent = mainFrame})
 	
-	local font = Font.new("rbxasset://fonts/families/Roboto.json")
+	local shadow = create("ImageLabel", {
+		Name = "Shadow",
+		AnchorPoint = Vector2.new(.5, .5),
+		BackgroundTransparency = 1,
+		Position = UDim2.new(.5, 0, .5, 0),
+		Size = UDim2.new(1, 40, 1, 40),
+		ZIndex = -1,
+		Image = "rbxassetid://14001321443",
+		ImageColor3 = Color3.fromRGB(13, 13, 13),
+		ScaleType = Enum.ScaleType.Slice,
+		SliceCenter = Rect.new(150, 150, 150, 150),
+		SliceScale = 0.99,
+		Parent = mainFrame
+	})
+	
 	font.Weight = Enum.FontWeight.Bold
 	font.Style = Enum.FontStyle.Italic
-	Title.Name = "Title"
-	Title.BackgroundTransparency = 1
-	Title.Position = UDim2.new(.015, 0, 0, 0)
-	Title.Size = UDim2.new(.622, 0, .065, 0)
-	Title.FontFace = font
-	Title.Text = name or "Nihility Hub"
-	Title.TextColor3 = Color3.fromRGB(216, 216, 216)
-	Title.TextXAlignment = Enum.TextXAlignment.Left
-	Title.TextScaled = true
-	Title.ZIndex = 10
+	local title = create("TextLabel", {
+		Name = "Title",
+		BackgroundTransparency = 1,
+		Position = UDim2.new(.015, 0, 0, 0),
+		Size = UDim2.new(.622, 0, .065, 0),
+		FontFace = font,
+		Text = name or "Nihility Hub",
+		TextColor3 = Color3.fromRGB(216, 216, 216),
+		TextXAlignment = Enum.TextXAlignment.Left,
+		TextScaled = true,
+		ZIndex = 10,
+		Parent = mainFrame
+	})
 	
-	Minimize.Name = "Minimize"
-	Minimize.BackgroundColor3 = Color3.fromRGB(34, 39, 39)
-	Minimize.Position = UDim2.new(.959, 0, .011, 0)
-	Minimize.Size = UDim2.new(.035, 0, .054, 0)
-	Minimize.Font = Enum.Font.Roboto
-	Minimize.Text = "-"
-	Minimize.TextColor3 = Color3.fromRGB(190, 190, 190)
-	Minimize.AutoButtonColor = false
-	Minimize.TextScaled = true
-	Minimize.ZIndex = 10
+	local minimize = create("TextButton", {
+		Name = "Minimize",
+		BackgroundColor3 = Color3.fromRGB(34, 39, 39),
+		Position = UDim2.new(.959, 0, .011, 0),
+		Size = UDim2.new(.035, 0, .054, 0),
+		Font = Enum.Font.Roboto,
+		Text = "-",
+		TextColor3 = Color3.fromRGB(190, 190, 190),
+		AutoButtonColor = false,
+		TextScaled = true,
+		ZIndex = 10,
+		Parent = mainFrame
+	})
 	
-	MinimizeCorner.CornerRadius = UDim.new(1, 0)
+	create("UICorner", {
+		CornerRadius = UDim.new(1, 0),
+		Parent = minimize
+	})
 	
-	TabsFrame.Name = "Tabs"
-	TabsFrame.BackgroundTransparency = 1
-	TabsFrame.Position = UDim2.new(0, 0, .097, 0)
-	TabsFrame.Size = UDim2.new(.2, 0, .903, 0)
-	TabsFrame.AutomaticCanvasSize = Enum.AutomaticSize.Y
-	TabsFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
-	TabsFrame.ScrollBarThickness = 4
-	TabsFrame.ScrollingDirection = Enum.ScrollingDirection.Y
+	local tabsFrame = create("ScrollingFrame", {
+		Name = "Tabs",
+		BackgroundTransparency = 1,
+		Position = UDim2.new(0, 0, .097, 0),
+		Size = UDim2.new(.2, 0, .903, 0),
+		AutomaticCanvasSize = Enum.AutomaticSize.Y,
+		CanvasSize = UDim2.new(0, 0, 0, 0),
+		ScrollBarThickness = 4,
+		ScrollingDirection = Enum.ScrollingDirection.Y,
+		Parent = background
+	})
 	
-	ItemsFrame.Name = "Items"
-	ItemsFrame.BackgroundTransparency = 1
-	ItemsFrame.Position = UDim2.new(.234, 0, .113, 0)
-	ItemsFrame.Size = UDim2.new(.76, 0, .887, 0)
-	ItemsFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
-	ItemsFrame.ScrollBarThickness = 4
+	local tabLayout = create("UIListLayout", {
+		SortOrder = Enum.SortOrder.LayoutOrder,
+		Padding = UDim.new(0, 5),
+		Parent = tabsFrame
+	})
 	
-	ItemsLayout.CellSize = UDim2.new(.95, 0, 0, 100)
-	ItemsLayout.SortOrder = Enum.SortOrder.LayoutOrder 
+	local itemsFrame = create("ScrollingFrame", {
+		Name = "Items",
+		BackgroundTransparency = 1,
+		Position = UDim2.new(.234, 0, .113, 0),
+		Size = UDim2.new(.76, 0, .887, 0),
+		CanvasSize = UDim2.new(0, 0, 0, 0),
+		ScrollBarThickness = 4,
+		Parent = background
+	})
 	
-	InfoMain.Name = "InfoBox"
-	InfoMain.AnchorPoint = Vector2.new(.5,.5)
-	InfoMain.BackgroundTransparency = 1
-	InfoMain.Size = UDim2.new(.055, 40, .045, 40)
-	InfoMain.ZIndex = 999
-	InfoMain.Visible = false
-	InfoMain.Image = "rbxassetid://14001321443"
-	InfoMain.ImageColor3 = Color3.fromRGB(33, 33, 33)
-	InfoMain.ScaleType = Enum.ScaleType.Slice
-	InfoMain.SliceCenter = Rect.new(150, 150, 150, 150)
-	InfoMain.SliceScale = .99
+	local itemsLayout = create("UIGridLayout", {
+		CellSize = UDim2.new(.95, 0, 0, 100),
+		SortOrder = Enum.SortOrder.LayoutOrder, 
+		Parent = itemsFrame
+	})
 	
-	InfoFrame.Name = "Main"
-	InfoFrame.AnchorPoint = Vector2.new(.5, .5)
-	InfoFrame.BackgroundColor3 = Color3.fromRGB(31, 34, 40)
-	InfoFrame.Position = UDim2.new(.5, 0, .5, 0)
-	InfoFrame.Size = UDim2.new(.93, 0, .89, 0)
-	InfoFrame.ZIndex = 9999
+	local infoMain = create("ImageLabel", {
+		Name = "InfoBox",
+		AnchorPoint = Vector2.new(.5,.5),
+		BackgroundTransparency = 1,
+		Size = UDim2.new(.055, 40, .045, 40),
+		ZIndex = 999,
+		Visible = false,
+		Image = "rbxassetid://14001321443",
+		ImageColor3 = Color3.fromRGB(33, 33, 33),
+		ScaleType = Enum.ScaleType.Slice,
+		SliceCenter = Rect.new(150, 150, 150, 150),
+		SliceScale = .99,
+		Parent = screenGui
+	})
 	
-	InfoFrameCorner.CornerRadius = UDim.new(.08, 0)
+	local infoFrame = create("Frame", {
+		Name = "Main",
+		AnchorPoint = Vector2.new(.5, .5),
+		BackgroundColor3 = Color3.fromRGB(31, 34, 40),
+		Position = UDim2.new(.5, 0, .5, 0),
+		Size = UDim2.new(.93, 0, .89, 0),
+		ZIndex = 9999,
+		Parent = infoMain
+	})
 	
-	local font = Font.new("rbxasset://fonts/families/Roboto.json")
+	create("UICorner", {
+		CornerRadius = UDim.new(.08, 0),
+		Parent = infoFrame
+	})
+	
 	font.Weight = Enum.FontWeight.Medium
-	InfoText.Name = "Text"
-	InfoText.AnchorPoint = Vector2.new(.5, .5)
-	InfoText.BackgroundTransparency = 1
-	InfoText.Position = UDim2.new(.5, 0, .5, 0)
-	InfoText.Size = UDim2.new(1, 0, .9, 0)
-	InfoText.ZIndex = 9999
-	InfoText.FontFace = font
-	InfoText.Text = "Info"
-	InfoText.TextColor3 = Color3.fromRGB(171, 171, 171)
-	InfoText.TextScaled = true
+	font.Style = Enum.FontStyle.Normal
+	local infoText = create("TextLabel", {
+		Name = "Text",
+		AnchorPoint = Vector2.new(.5, .5),
+		BackgroundTransparency = 1,
+		Position = UDim2.new(.5, 0, .5, 0),
+		Size = UDim2.new(1, 0, .9, 0),
+		ZIndex = 9999,
+		FontFace = font,
+		Text = "Info",
+		TextColor3 = Color3.fromRGB(171, 171, 171),
+		TextScaled = true,
+		Parent = infoFrame
+	})
 	
-	InfoTextConstraint.MaxTextSize = 14
+	create("UITextSizeConstraint", {
+		MaxTextSize = 14,
+		Parent = infoText
+	})
 	
-	local BaseSize = MainFrame.Size
-	local MinimizeDebounce = false
+	local baseSize = mainFrame.Size
+	local minimizeDebounce = false
 	
 	local function OpenUI()
-		MainFrame.Size = UDim2.new(0, 0, 0, 0)
-		LoadingIcon.ImageTransparency = 1
-		LoadingIconShadow.ImageTransparency = 1
-		LoadingFrame.BackgroundTransparency = 0
-		MainFrame.Visible = true
-		LoadingFrame.ZIndex = 99
-
-		local openTween = TweenService:Create(
-			MainFrame,
+		mainFrame.Size = UDim2.new(0, 0, 0, 0)
+		loadingIcon.ImageTransparency = 1
+		loadingIconShadow.ImageTransparency = 1
+		loadingFrame.BackgroundTransparency = 0
+		mainFrame.Visible = true
+		loadingFrame.ZIndex = 99
+		
+		local openTween = TS:Create(
+			mainFrame,
 			TweenInfo.new(.5, Enum.EasingStyle.Circular, Enum.EasingDirection.InOut),
 			{
-				["Size"] = BaseSize
+				["Size"] = baseSize
 			}
 		)
 		openTween:Play()
@@ -231,15 +299,15 @@ function NH_UI:NewWindow(name: string, icon: string, bind: string)
 
 		task.wait(.35)
 
-		local iconTween = TweenService:Create(
-			LoadingIcon,
+		local iconTween = TS:Create(
+			loadingIcon,
 			TweenInfo.new(.35, Enum.EasingStyle.Circular, Enum.EasingDirection.InOut),
 			{
 				["ImageTransparency"] = 0
 			}
 		)
-		local shadowTween = TweenService:Create(
-			LoadingIconShadow,
+		local shadowTween = TS:Create(
+			loadingIconShadow,
 			TweenInfo.new(.35, Enum.EasingStyle.Circular, Enum.EasingDirection.InOut),
 			{
 				["ImageTransparency"] = 0
@@ -251,8 +319,8 @@ function NH_UI:NewWindow(name: string, icon: string, bind: string)
 
 		task.wait(.2)
 
-		local iconSpinTween = TweenService:Create(
-			LoadingIcon,
+		local iconSpinTween = TS:Create(
+			loadingIcon,
 			TweenInfo.new(.85, Enum.EasingStyle.Circular, Enum.EasingDirection.InOut),
 			{
 				["Rotation"] = 360
@@ -263,22 +331,22 @@ function NH_UI:NewWindow(name: string, icon: string, bind: string)
 
 		task.wait(.4)
 
-		local iconFadeTween = TweenService:Create(
-			LoadingIcon,
+		local iconFadeTween = TS:Create(
+			loadingIcon,
 			TweenInfo.new(.35, Enum.EasingStyle.Circular, Enum.EasingDirection.InOut),
 			{
 				["ImageTransparency"] = 1
 			}
 		)
-		local shadowFadeTween = TweenService:Create(
-			LoadingIconShadow,
+		local shadowFadeTween = TS:Create(
+			loadingIconShadow,
 			TweenInfo.new(.35, Enum.EasingStyle.Circular, Enum.EasingDirection.InOut),
 			{
 				["ImageTransparency"] = 1
 			}
 		)
-		local backgroundFadeTween = TweenService:Create(
-			LoadingFrame,
+		local backgroundFadeTween = TS:Create(
+			loadingFrame,
 			TweenInfo.new(.35, Enum.EasingStyle.Circular, Enum.EasingDirection.InOut),
 			{
 				["BackgroundTransparency"] = 1
@@ -289,15 +357,17 @@ function NH_UI:NewWindow(name: string, icon: string, bind: string)
 		backgroundFadeTween:Play()
 	end
 	
+	OpenUI()
+	
 	local function minimizeAndExpand(minimizing)
-		if MinimizeDebounce then return end
-		MinimizeDebounce = true
-		
+		if minimizeDebounce then return end
+		minimizeDebounce = true
+
 		if minimizing then
-			LoadingFrame.ZIndex = 9
-			
-			local loadingFadeTween = TweenService:Create(
-				LoadingFrame,
+			loadingFrame.ZIndex = 9
+
+			local loadingFadeTween = TS:Create(
+				loadingFrame,
 				TweenInfo.new(.35, Enum.EasingStyle.Circular, Enum.EasingDirection.InOut),
 				{
 					["BackgroundTransparency"] = 0
@@ -305,19 +375,19 @@ function NH_UI:NewWindow(name: string, icon: string, bind: string)
 			)
 			loadingFadeTween:Play()
 			loadingFadeTween.Completed:Wait()
-			Background.Visible = false
-			
+			background.Visible = false
+
 			task.wait(.1)
-			
-			local minBackgroundTween = TweenService:Create(
-				LoadingFrame,
+
+			local minBackgroundTween = TS:Create(
+				loadingFrame,
 				TweenInfo.new(.6, Enum.EasingStyle.Circular, Enum.EasingDirection.InOut),
 				{
 					["Size"] = UDim2.new(1, 0, 0.077, 0)
 				}
 			)
-			local minShadowTween = TweenService:Create(
-				Shadow,
+			local minShadowTween = TS:Create(
+				shadow,
 				TweenInfo.new(.6, Enum.EasingStyle.Circular, Enum.EasingDirection.InOut),
 				{
 					["Position"] = UDim2.new(0.498, 0, 0.041, 0),
@@ -327,21 +397,21 @@ function NH_UI:NewWindow(name: string, icon: string, bind: string)
 			minBackgroundTween:Play()
 			minShadowTween:Play()
 			minShadowTween.Completed:Wait()
-			
-			Minimize.Text = "+"
-		else
-			LoadingFrame.ZIndex = 9
-			LoadingIcon.Rotation = 0
 
-			local expBackgroundTween = TweenService:Create(
-				LoadingFrame,
+			minimize.Text = "+"
+		else
+			loadingFrame.ZIndex = 9
+			loadingIcon.Rotation = 0
+
+			local expBackgroundTween = TS:Create(
+				loadingFrame,
 				TweenInfo.new(.6, Enum.EasingStyle.Circular, Enum.EasingDirection.InOut),
 				{
 					["Size"] = UDim2.new(1, 0, 1, 0)
 				}
 			)
-			local expShadowTween = TweenService:Create(
-				Shadow,
+			local expShadowTween = TS:Create(
+				shadow,
 				TweenInfo.new(.6, Enum.EasingStyle.Circular, Enum.EasingDirection.InOut),
 				{
 					["Position"] = UDim2.new(0.5, 0, 0.5, 0),
@@ -351,21 +421,21 @@ function NH_UI:NewWindow(name: string, icon: string, bind: string)
 			expBackgroundTween:Play()
 			expShadowTween:Play()
 			expShadowTween.Completed:Wait()
-			
-			Background.Visible = true
-			Minimize.Text = "-"
-			
+
+			background.Visible = true
+			minimize.Text = "-"
+
 			task.wait(.15)
 
-			local iconTween = TweenService:Create(
-				LoadingIcon,
+			local iconTween = TS:Create(
+				loadingIcon,
 				TweenInfo.new(.35, Enum.EasingStyle.Circular, Enum.EasingDirection.InOut),
 				{
 					["ImageTransparency"] = 0
 				}
 			)
-			local shadowTween = TweenService:Create(
-				LoadingIconShadow,
+			local shadowTween = TS:Create(
+				loadingIconShadow,
 				TweenInfo.new(.35, Enum.EasingStyle.Circular, Enum.EasingDirection.InOut),
 				{
 					["ImageTransparency"] = 0
@@ -377,8 +447,8 @@ function NH_UI:NewWindow(name: string, icon: string, bind: string)
 
 			task.wait(.2)
 
-			local iconSpinTween = TweenService:Create(
-				LoadingIcon,
+			local iconSpinTween = TS:Create(
+				loadingIcon,
 				TweenInfo.new(.85, Enum.EasingStyle.Circular, Enum.EasingDirection.InOut),
 				{
 					["Rotation"] = 360
@@ -389,22 +459,22 @@ function NH_UI:NewWindow(name: string, icon: string, bind: string)
 
 			task.wait(.4)
 
-			local iconFadeTween = TweenService:Create(
-				LoadingIcon,
+			local iconFadeTween = TS:Create(
+				loadingIcon,
 				TweenInfo.new(.35, Enum.EasingStyle.Circular, Enum.EasingDirection.InOut),
 				{
 					["ImageTransparency"] = 1
 				}
 			)
-			local shadowFadeTween = TweenService:Create(
-				LoadingIconShadow,
+			local shadowFadeTween = TS:Create(
+				loadingIconShadow,
 				TweenInfo.new(.35, Enum.EasingStyle.Circular, Enum.EasingDirection.InOut),
 				{
 					["ImageTransparency"] = 1
 				}
 			)
-			local backgroundFadeTween = TweenService:Create(
-				LoadingFrame,
+			local backgroundFadeTween = TS:Create(
+				loadingFrame,
 				TweenInfo.new(.35, Enum.EasingStyle.Circular, Enum.EasingDirection.InOut),
 				{
 					["BackgroundTransparency"] = 1
@@ -415,385 +485,464 @@ function NH_UI:NewWindow(name: string, icon: string, bind: string)
 			backgroundFadeTween:Play()
 			backgroundFadeTween.Completed:Wait()
 		end
-		
+
 		task.wait(.15)
-		
-		MinimizeDebounce = false
+
+		minimizeDebounce = false
 	end
-	
-	Minimize.MouseButton1Click:Connect(function()	
-		minimizeAndExpand(Background.Visible)
+
+	minimize.MouseButton1Click:Connect(function()	
+		minimizeAndExpand(background.Visible)
 	end)
 	
-	local switchingTabs = false
-	local function switchTabs(tab, tabItems)
-		for _, item in pairs(ItemsFrame:GetChildren()) do
-			if item ~= ItemsLayout then
-				item:Destroy()
-			end
-		end
+	--local function updateCanvasSize(scrollingFrame, listLayout)
+	--	task.defer(function()
+	--		local contentHeight = listLayout.AbsoluteContentSize.Y
+	--		local visibleHeight = scrollingFrame.AbsoluteSize.Y
+	--		if contentHeight > visibleHeight then
+	--			scrollingFrame.CanvasSize = UDim2.new(0, 0, 0, contentHeight)
+	--		else
+	--			scrollingFrame.CanvasSize = UDim2.new(0, 0, 0, visibleHeight + 1)
+	--		end
+	--	end)
+	--end
 
-		for _, itemData in ipairs(tabItems) do
-			if itemData[1] == "Button" then
-				tab:NewButton(itemData[2], itemData[3], itemData[4])
-			elseif itemData[1] == "Toggle" then
-				tab:NewToggle(itemData[2], itemData[3], itemData[4], itemData[5])
-			end
-		end
+	--tabLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+	--	updateCanvasSize(tabsFrame, tabLayout)
+	--end)
+	--tabsFrame.ChildAdded:Connect(function()
+	--	updateCanvasSize(tabsFrame, tabLayout)
+	--end)
+	--tabsFrame.ChildRemoved:Connect(function()
+	--	updateCanvasSize(tabsFrame, tabLayout)
+	--end)
 
-		switchingTabs = false
+	local items = {}
+	
+	-- Buttons
+	local function createButton(name, info, callback)
+		local buttonFrame = create("ImageLabel", {
+			Name = name,
+			BackgroundTransparency = 1,
+			Image = "rbxassetid://14001321443",
+			ImageColor3 = Color3.fromRGB(18, 18, 18),
+			ScaleType = Enum.ScaleType.Slice,
+			SliceCenter = Rect.new(150, 150, 150, 150),
+			Parent = itemsFrame
+		})
+		
+		create("UIAspectRatioConstraint", {
+			AspectRatio = 8.18,
+			Parent = buttonFrame
+		})
+		
+		local infoButton = create("TextButton", {
+			Name = "Info",
+			BackgroundColor3 = Color3.fromRGB(34, 39, 39),
+			Position = UDim2.new(.959, 0, .011, 0),
+			Size = UDim2.new(.035, 0, .279, 0),
+			Font = Enum.Font.Roboto,
+			Text = "?",
+			TextColor3 = Color3.fromRGB(190, 190, 190),
+			TextScaled = true,
+			ZIndex = 2,
+			AutoButtonColor = false,
+			Visible = (info ~= "" and true) or false,
+			Parent = buttonFrame,
+		})
+		
+		create("UICorner", {
+			CornerRadius = UDim.new(1, 0),
+			Parent = infoButton
+		})
+		
+		local buttonButton = create("TextButton", {
+			Name = "Button",
+			AnchorPoint = Vector2.new(.5, .5),
+			BackgroundColor3 = Color3.fromRGB(23, 23, 26),
+			Position = UDim2.new(.5, 0, .5, 0),
+			Size = UDim2.new(.965, 0, .726, 0),
+			Text = "",
+			AutoButtonColor = false,
+			Parent = buttonFrame
+		})
+		
+		create("UICorner", {
+			CornerRadius = UDim.new(.15, 0),
+			Parent = buttonButton
+		})
+		
+		create("UIStroke", {
+			Color = Color3.fromRGB(6, 6, 6),
+			Thickness = 4,
+			Parent = buttonButton
+		})
+		
+		font.Weight = Enum.FontWeight.Medium
+		font.Style = Enum.FontStyle.Normal
+		local buttonTitle = create("TextLabel", {
+			Name = "Title",
+			BackgroundTransparency = 1,
+			AnchorPoint = Vector2.new(.5, .5),
+			Position = UDim2.new(.502, 0, .5, 0),
+			Size = UDim2.new(.947, 0, .95, 0),
+			FontFace = font,
+			Text = name,
+			TextColor3 = Color3.fromRGB(214, 214, 214),
+			TextScaled = true,
+			Parent = buttonButton
+		})
+		
+		create("UITextSizeConstraint", {
+			MaxTextSize = 22,
+			Parent = buttonTitle
+		})
+		
+		buttonButton.MouseEnter:Connect(function()
+			buttonButton.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
+		end)
+
+		buttonButton.MouseButton1Down:Connect(function()
+			buttonButton.BackgroundColor3 = Color3.fromRGB(20, 20, 23)
+		end)
+
+		buttonButton.MouseLeave:Connect(function()
+			buttonButton.BackgroundColor3 = Color3.fromRGB(23, 23, 26)
+		end)
+
+		buttonButton.MouseButton1Up:Connect(function()
+			buttonButton.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
+		end)
+
+		infoButton.MouseEnter:Connect(function()
+			local mouse = UIS:GetMouseLocation()
+			local inset = game:GetService("GuiService"):GetGuiInset()
+			mouse = mouse - inset
+
+			local posX = (mouse.X - infoMain.Parent.AbsolutePosition.X) / UIScale.Scale
+			local posY = (mouse.Y - infoMain.Parent.AbsolutePosition.Y - 50) / UIScale.Scale
+
+			infoMain.Position = UDim2.new(0, posX, 0, posY)
+			infoText.Text = info
+			infoMain.Visible = true
+		end)
+
+		infoButton.MouseLeave:Connect(function()
+			infoMain.Visible = false
+		end)
+
+		buttonButton.MouseButton1Click:Connect(function()
+			pcall(callback)
+		end)
 	end
 	
+	-- Toggles
+	local function createToggle(name, info, state, callback, tab, itemIndex)
+		local toggleFrame = create("ImageLabel", {
+			Name = name,
+			BackgroundTransparency = 1,
+			Image = "rbxassetid://14001321443",
+			ImageColor3 = Color3.fromRGB(18, 18, 18),
+			ScaleType = Enum.ScaleType.Slice,
+			SliceCenter = Rect.new(150, 150, 150, 150),
+			Parent = itemsFrame
+		})
+		
+		create("UIAspectRatioConstraint", {
+			AspectRatio = 8.18,
+			Parent = toggleFrame
+		})
+		
+		local toggleState = create("Frame", {
+			Name = "State",
+			AnchorPoint = Vector2.new(0, .5),
+			BackgroundColor3 = Color3.fromRGB(39, 40, 44),
+			Position = UDim2.new(.719, 0, .5, 0),
+			Size = UDim2.new(.21, 0, .561, 0),
+			ZIndex = 2,
+			Parent = toggleFrame
+		})
+		
+		create("UICorner", {
+			CornerRadius = UDim.new(.2, 0),
+			Parent = toggleState
+		})
+		
+		create("UIStroke", {
+			Thickness = 2,
+			Parent = toggleState
+		})
+		
+		local toggleStateButton = create("TextButton", {
+			Name = "Button",
+			AutoButtonColor = false,
+			BackgroundColor3 = Color3.fromRGB(231, 72, 72),
+			Position = UDim2.new(.5, 0, 0, 0),
+			Size = UDim2.new(.5, 0, 1, 0),
+			Text = "",
+			ZIndex = 2,
+			Parent = toggleState
+		})
+		
+		create("UICorner", {
+			CornerRadius = UDim.new(.25, 0),
+			Parent = toggleStateButton
+		})
+		
+		local infoButton = create("TextButton", {
+			Name = "Info",
+			BackgroundColor3 = Color3.fromRGB(34, 39, 39),
+			Position = UDim2.new(.959, 0, .011, 0),
+			Size = UDim2.new(.035, 0, .279, 0),
+			Font = Enum.Font.Roboto,
+			Text = "?",
+			TextColor3 = Color3.fromRGB(190, 190, 190),
+			TextScaled = true,
+			ZIndex = 2,
+			AutoButtonColor = false,
+			Visible = (info ~= "" and true) or false,
+			Parent = toggleFrame,
+		})
+
+		create("UICorner", {
+			CornerRadius = UDim.new(1, 0),
+			Parent = infoButton
+		}) 
+		
+		local toggleButton = create("TextButton", {
+			Name = "Button",
+			AnchorPoint = Vector2.new(.5, .5),
+			AutoButtonColor = false,
+			BackgroundColor3 = Color3.fromRGB(23, 23, 26),
+			Position = UDim2.new(.5, 0, .5, 0),
+			Size = UDim2.new(.965, 0, .726, 0),
+			Text = "",
+			Parent = toggleFrame
+		})
+		
+		create("UICorner", {
+			CornerRadius = UDim.new(.15, 0),
+			Parent = toggleButton
+		})
+		
+		create("UIStroke", {
+			Color = Color3.fromRGB(6, 6, 6),
+			Thickness = 4,
+			Parent = toggleButton
+		})
+		
+		font.Weight = Enum.FontWeight.Medium
+		font.Style = Enum.FontStyle.Normal
+		local toggleText = create("TextLabel", {
+			Name = "Title",
+			AnchorPoint = Vector2.new(.5, .5),
+			BackgroundTransparency = 1,
+			Position = UDim2.new(.369, 0, .5, 0),
+			Size = UDim2.new(.68, 0, .95, 0),
+			FontFace = font,
+			Text = name,
+			TextColor3 = Color3.fromRGB(214, 214, 214),
+			TextScaled = true,
+			Parent = toggleButton
+		})
+		
+		create("UITextSizeConstraint", {
+			MaxTextSize = 22,
+			Parent = toggleText
+		})
+		
+		toggleButton.MouseEnter:Connect(function()
+			toggleButton.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
+		end)
+
+		toggleButton.MouseButton1Down:Connect(function()
+			toggleButton.BackgroundColor3 = Color3.fromRGB(20, 20, 23)
+		end)
+
+		toggleButton.MouseLeave:Connect(function()
+			toggleButton.BackgroundColor3 = Color3.fromRGB(23, 23, 26)
+		end)
+
+		toggleButton.MouseButton1Up:Connect(function()
+			toggleButton.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
+		end)
+
+		infoButton.MouseEnter:Connect(function()
+			local mouse = UIS:GetMouseLocation()
+			local inset = game:GetService("GuiService"):GetGuiInset()
+			mouse = mouse - inset
+
+			local posX = (mouse.X - infoMain.Parent.AbsolutePosition.X) / UIScale.Scale
+			local posY = (mouse.Y - infoMain.Parent.AbsolutePosition.Y - 50) / UIScale.Scale
+
+			infoMain.Position = UDim2.new(0, posX, 0, posY)
+			infoText.Text = info
+			infoMain.Visible = true
+		end)
+
+		infoButton.MouseLeave:Connect(function()
+			infoMain.Visible = false
+		end)
+
+		local function switchState(newState)
+			print(items[tab][itemIndex])
+			items[tab][itemIndex].state = newState
+
+			pcall(function()
+				callback(newState)
+			end)
+
+			local stateSwitchTween = TS:Create(
+				toggleStateButton,
+				TweenInfo.new(.2, Enum.EasingStyle.Circular, Enum.EasingDirection.InOut),
+				{
+					["BackgroundColor3"] = (newState and Color3.fromRGB(67, 231, 100)) or Color3.fromRGB(231, 72, 72),
+					["Position"] = (newState and UDim2.new(.5, 0, 0, 0)) or UDim2.new(0, 0, 0, 0)
+				}
+			)
+			stateSwitchTween:Play()
+		end
+
+		toggleButton.MouseButton1Click:Connect(function()
+			items[tab][itemIndex].state = not items[tab][itemIndex].state
+			switchState(items[tab][itemIndex].state)
+		end)
+
+		toggleStateButton.MouseButton1Click:Connect(function()
+			items[tab][itemIndex].state = not items[tab][itemIndex].state
+			switchState(items[tab][itemIndex].state)
+		end)
+		switchState(items[tab][itemIndex].state)
+	end
+	
+	-- Tabs
+	local activeTab = nil
 	function window:NewTab(tabName: string, info: string)
 		local tab = {}
+		items[tab] = {}
 		
-		tabName = tabName or "Tab".. #items + 1
-		info = info or ""
-		items[tab] = {tab, {}}
+		local function switchTab()
+			if activeTab == tab then return end
+			activeTab = tab
+			
+			-- Clear current items
+			for _, item in pairs(itemsFrame:GetChildren()) do
+				if item ~= itemsLayout then
+					item:Destroy()
+				end
+			end
+			
+			-- Load tabs items
+			for i, item in ipairs(items[tab]) do
+				print(items[tab])
+				if item.type == "Button" then
+					createButton(item.name, item.info, item.callback)
+				elseif item.type == "Toggle" then
+					createToggle(item.name, item.info, item.state, item.callback, tab, i)
+				end
+			end
+		end
 		
-		local TabFrame = Instance.new("ImageLabel", TabsFrame)
-		local TabButton = Instance.new("TextButton", TabFrame)
-		local TabButtonCorner = Instance.new("UICorner", TabButton)
-		local TabButtonStroke = Instance.new("UIStroke", TabButton)
-		local TabText = Instance.new("TextLabel", TabButton)
-		local TabTextConstraint = Instance.new("UITextSizeConstraint", TabText)
+		if activeTab == nil then
+			switchTab()
+		end
 		
-		TabFrame.Name = tabName
-		TabFrame.BackgroundTransparency = 1
-		TabFrame.Size = UDim2.new(1, 0, .132, 0)
-		TabFrame.Image = "rbxassetid://14001321443"
-		TabFrame.ImageColor3 = Color3.fromRGB(18, 18, 18)
-		TabFrame.ScaleType = Enum.ScaleType.Slice
-		TabFrame.SliceCenter = Rect.new(150, 150, 150, 150)
+		local tabFrame = create("ImageLabel", {
+			Name = tabName,
+			BackgroundTransparency = 1,
+			Size = UDim2.new(1, 0, 0, 70),
+			Image = "rbxassetid://14001321443",
+			ImageColor3 = Color3.fromRGB(18, 18, 18),
+			ScaleType = Enum.ScaleType.Slice,
+			SliceCenter = Rect.new(150, 150, 150, 150),
+			Parent = tabsFrame
+		})
 		
-		TabButton.Name = "Button"
-		TabButton.AnchorPoint = Vector2.new(.5, .5)
-		TabButton.BackgroundColor3 = Color3.fromRGB(23, 23, 26)
-		TabButton.Position = UDim2.new(.5, 0, .5, 0)
-		TabButton.Size = UDim2.new(.883, 0, .726, 0)
-		TabButton.Text = ""
-		TabButton.AutoButtonColor = false
+		local tabButton = create("TextButton", {
+			Name = "Button",
+			AnchorPoint = Vector2.new(.5, .5),
+			BackgroundColor3 = Color3.fromRGB(23, 23, 26),
+			Position = UDim2.new(.5, 0, .5, 0),
+			Size = UDim2.new(.883, 0, .726, 0),
+			Text = "",
+			AutoButtonColor = false,
+			Parent = tabFrame
+		})
 		
-		TabButtonCorner.CornerRadius = UDim.new(.15, 0)
+		create("UICorner", {
+			CornerRadius = UDim.new(.15, 0),
+			Parent = tabButton
+		})
 		
-		TabButtonStroke.Color = Color3.fromRGB(6, 6, 6)
-		TabButtonStroke.Thickness = 4
+		create("UIStroke", {
+			Color = Color3.fromRGB(6, 6, 6),
+			Thickness = 4,
+			Parent = tabButton
+		})
 		
-		local font = Font.new("rbxasset://fonts/families/Roboto.json")
 		font.Weight = Enum.FontWeight.Medium
-		TabText.Name = "Title"
-		TabText.AnchorPoint = Vector2.new(.5, .5)
-		TabText.BackgroundTransparency = 1
-		TabText.Position = UDim2.new(.5, 0, .5, 0)
-		TabText.Size = UDim2.new(.9, 0, .95, 0)
-		TabText.FontFace = font
-		TabText.Text = tabName
-		TabText.TextColor3 = Color3.fromRGB(214, 214, 214)
-		TabText.TextScaled = true
+		font.Style = Enum.FontStyle.Normal
+		local tabText = create("TextLabel", {
+			Name = "Title",
+			AnchorPoint = Vector2.new(.5, .5),
+			BackgroundTransparency = 1,
+			Position = UDim2.new(.5, 0, .5, 0),
+			Size = UDim2.new(.9, 0, .95, 0),
+			FontFace = font,
+			Text = tabName,
+			TextColor3 = Color3.fromRGB(214, 214, 214),
+			TextScaled = true,
+			Parent = tabButton
+		})
 		
-		TabTextConstraint.MaxTextSize = 22
+		create("UITextSizeConstraint", {
+			MaxTextSize = 22,
+			Parent = tabText
+		})
 		
-		TabButton.MouseButton1Click:Connect(function()
-			if switchingTabs then return end
-			switchingTabs = true
-			print(items)
-			switchTabs(tab, items[tab][2])
+		tabButton.MouseButton1Click:Connect(function()
+			switchTab()
 		end)
+		
+		-- Tab functions
 		
 		function tab:NewButton(name: string, info: string, callback: () -> ())
 			local button = {}
+			table.insert(items[tab], {
+				type = "Button",
+				name = name,
+				info = info,
+				callback = callback
+			})
 			
-			name = name or "Item".. #items[tab][2] + 1
-			info = info or ""
-			callback = callback or function() end
-			local order = #ItemsFrame:GetChildren()
-			
-			items[tab][2][order] = {
-				"Button",
-				name,
-				info,
-				callback,
-			}
-			
-			local buttonFrame = Instance.new("ImageLabel", ItemsFrame)
-			local buttonAspectRatio = Instance.new("UIAspectRatioConstraint", buttonFrame)
-			local infoButton = Instance.new("TextButton", buttonFrame)
-			local infoButtonCorner = Instance.new("UICorner", infoButton)
-			local buttonButton = Instance.new("TextButton", buttonFrame)
-			local buttonButtonCorner = Instance.new("UICorner", buttonButton)
-			local buttonButtonStroke = Instance.new("UIStroke", buttonButton)
-			local buttonTitle = Instance.new("TextLabel", buttonButton)
-			local buttonTitleConstraint = Instance.new("UITextSizeConstraint", buttonTitle)
-			
-			buttonFrame.Name = name
-			buttonFrame.BackgroundTransparency = 1
-			buttonFrame.Image = "rbxassetid://14001321443"
-			buttonFrame.ImageColor3 = Color3.fromRGB(18, 18, 18)
-			buttonFrame.ScaleType = Enum.ScaleType.Slice
-			buttonFrame.SliceCenter = Rect.new(150, 150, 150, 150)
-			
-			buttonAspectRatio.AspectRatio = 8.18
-			
-			infoButton.Name = "Info"
-			infoButton.BackgroundColor3 = Color3.fromRGB(34, 39, 39)
-			infoButton.Position = UDim2.new(.959, 0, .011, 0)
-			infoButton.Size = UDim2.new(.035, 0, .279, 0)
-			infoButton.Font = Enum.Font.Roboto
-			infoButton.Text = "?"
-			infoButton.TextColor3 = Color3.fromRGB(190, 190, 190)
-			infoButton.TextScaled = true
-			infoButton.ZIndex = 2
-			infoButton.AutoButtonColor = false
-			infoButton.Visible = (info ~= "" and true) or false
-			
-			infoButtonCorner.CornerRadius = UDim.new(1, 0)
-			
-			buttonButton.Name = "Button"
-			buttonButton.AnchorPoint = Vector2.new(.5, .5)
-			buttonButton.BackgroundColor3 = Color3.fromRGB(23, 23, 26)
-			buttonButton.Position = UDim2.new(.5, 0, .5, 0)
-			buttonButton.Size = UDim2.new(.965, 0, .726, 0)
-			buttonButton.Text = ""
-			buttonButton.AutoButtonColor = false
-			
-			buttonButtonCorner.CornerRadius = UDim.new(.15, 0)
-			
-			buttonButtonStroke.Color = Color3.fromRGB(6, 6, 6)
-			buttonButtonStroke.Thickness = 4
-			
-			local font = Font.new("rbxasset://fonts/families/Roboto.json")
-			font.Weight = Enum.FontWeight.Medium
-			buttonTitle.Name = "Title"
-			buttonTitle.BackgroundTransparency = 1
-			buttonTitle.AnchorPoint = Vector2.new(.5, .5)
-			buttonTitle.Position = UDim2.new(.502, 0, .5, 0)
-			buttonTitle.Size = UDim2.new(.947, 0, .95, 0)
-			buttonTitle.FontFace = font
-			buttonTitle.Text = name
-			buttonTitle.TextColor3 = Color3.fromRGB(214, 214, 214)
-			buttonTitle.TextScaled = true
-			
-			buttonTitleConstraint.MaxTextSize = 22
-			
-			buttonButton.MouseEnter:Connect(function()
-				buttonButton.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
-			end)
-			
-			buttonButton.MouseButton1Down:Connect(function()
-				buttonButton.BackgroundColor3 = Color3.fromRGB(20, 20, 23)
-			end)
-			
-			buttonButton.MouseLeave:Connect(function()
-				buttonButton.BackgroundColor3 = Color3.fromRGB(23, 23, 26)
-			end)
-			
-			buttonButton.MouseButton1Up:Connect(function()
-				buttonButton.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
-			end)
-			
-			infoButton.MouseEnter:Connect(function()
-				local mouse = UIS:GetMouseLocation()
-				local inset = game:GetService("GuiService"):GetGuiInset()
-				mouse = mouse - inset
-
-				local posX = (mouse.X - InfoMain.Parent.AbsolutePosition.X) / UIScale.Scale
-				local posY = (mouse.Y - InfoMain.Parent.AbsolutePosition.Y - 50) / UIScale.Scale
-
-				InfoMain.Position = UDim2.new(0, posX, 0, posY)
-				InfoText.Text = info
-				InfoMain.Visible = true
-			end)
-			
-			infoButton.MouseLeave:Connect(function()
-				InfoMain.Visible = false
-			end)
-			
-			buttonButton.MouseButton1Click:Connect(function()
-				pcall(callback)
-			end)
+			if activeTab == tab then
+				createButton(name, info, callback)
+			end
 			
 			return button
 		end
 		
 		function tab:NewToggle(name: string, info: string, initialState: boolean, callback: () -> ())
 			local toggle = {}
+			table.insert(items[tab], {
+				type = "Toggle",
+				name = name,
+				info = info,
+				state = initialState,
+				callback = callback
+			})
 			
-			name = name or "Item".. #items[tab][2] + 1
-			info = info or ""
-			callback = callback or function() end
-			local state = initialState or false
-			local order = #ItemsFrame:GetChildren()
-
-			items[tab][2][order] = {
-				"Toggle",
-				name,
-				info,
-				state,
-				callback,
-			}
+			local itemIndex = #items[tab]
 			
-			local ToggleFrame = Instance.new("ImageLabel", ItemsFrame)
-			local ToggleAspectRatio = Instance.new("UIAspectRatioConstraint", ToggleFrame)
-			local ToggleState = Instance.new("Frame", ToggleFrame)
-			local ToggleStateCorner = Instance.new("UICorner", ToggleState)
-			local ToggleStateStroke = Instance.new("UIStroke", ToggleState)
-			local ToggleStateButton = Instance.new("TextButton", ToggleState)
-			local ToggleStateButtonCorner = Instance.new("UICorner", ToggleStateButton)
-			local InfoButton = Instance.new("TextButton", ToggleFrame)
-			local InfoButtonCorner = Instance.new("UICorner", InfoButton)
-			local ToggleButton = Instance.new("TextButton", ToggleFrame)
-			local ToggleButtonCorner = Instance.new("UICorner", ToggleButton)
-			local ToggleButtonStroke = Instance.new("UIStroke", ToggleButton)
-			local ToggleText = Instance.new("TextLabel", ToggleButton)
-			local ToggleTextConstraint = Instance.new("UITextSizeConstraint", ToggleText)
-			local switchingState = false
-			
-			ToggleFrame.Name = name
-			ToggleFrame.BackgroundTransparency = 1
-			ToggleFrame.Image = "rbxassetid://14001321443"
-			ToggleFrame.ImageColor3 = Color3.fromRGB(18, 18, 18)
-			ToggleFrame.ScaleType = Enum.ScaleType.Slice
-			ToggleFrame.SliceCenter = Rect.new(150, 150, 150, 150)
-			
-			ToggleAspectRatio.AspectRatio = 8.18
-			
-			ToggleState.Name = "State"
-			ToggleState.AnchorPoint = Vector2.new(0, .5)
-			ToggleState.BackgroundColor3 = Color3.fromRGB(39, 40, 44)
-			ToggleState.Position = UDim2.new(.719, 0, .5, 0)
-			ToggleState.Size = UDim2.new(.21, 0, .561, 0)
-			ToggleState.ZIndex = 2
-			
-			ToggleStateCorner.CornerRadius = UDim.new(.2, 0)
-			
-			ToggleStateStroke.Thickness = 2
-			
-			ToggleStateButton.Name = "Button"
-			ToggleStateButton.AutoButtonColor = false
-			ToggleStateButton.BackgroundColor3 = Color3.fromRGB(231, 72, 72)
-			ToggleStateButton.Position = UDim2.new(.5, 0, 0, 0)
-			ToggleStateButton.Size = UDim2.new(.5, 0, 1, 0)
-			ToggleStateButton.Text = ""
-			ToggleStateButton.ZIndex = 2
-			
-			ToggleStateButtonCorner.CornerRadius = UDim.new(.25, 0)
-			
-			InfoButton.Name = "Info"
-			InfoButton.BackgroundColor3 = Color3.fromRGB(34, 39, 39)
-			InfoButton.AutoButtonColor = false
-			InfoButton.Position = UDim2.new(.959, 0, .011, 0)
-			InfoButton.Size = UDim2.new(.035, 0, .279, 0)
-			InfoButton.ZIndex = 2
-			InfoButton.Font = Enum.Font.Roboto
-			InfoButton.Text = "?"
-			InfoButton.TextColor3 = Color3.fromRGB(190, 190, 190)
-			InfoButton.TextScaled = true
-			InfoButton.Visible = (info ~= "" and true) or false
-
-			
-			InfoButtonCorner.CornerRadius = UDim.new(1, 0)
-			
-			ToggleButton.Name = "Button"
-			ToggleButton.AnchorPoint = Vector2.new(.5, .5)
-			ToggleButton.AutoButtonColor = false
-			ToggleButton.BackgroundColor3 = Color3.fromRGB(23, 23, 26)
-			ToggleButton.Position = UDim2.new(.5, 0, .5, 0)
-			ToggleButton.Size = UDim2.new(.965, 0, .726, 0)
-			ToggleButton.Text = ""
-			
-			ToggleButtonCorner.CornerRadius = UDim.new(.15, 0)
-			
-			ToggleButtonStroke.Color = Color3.fromRGB(6, 6, 6)
-			ToggleButtonStroke.Thickness = 4
-			
-			local font = Font.new("rbxasset://fonts/families/Roboto.json")
-			font.Weight = Enum.FontWeight.Medium
-			ToggleText.Name = "Title"
-			ToggleText.AnchorPoint = Vector2.new(.5, .5)
-			ToggleText.BackgroundTransparency = 1
-			ToggleText.Position = UDim2.new(.369, 0, .5, 0)
-			ToggleText.Size = UDim2.new(.68, 0, .95, 0)
-			ToggleText.FontFace = font
-			ToggleText.Text = name
-			ToggleText.TextColor3 = Color3.fromRGB(214, 214, 214)
-			ToggleText.TextScaled = true
-			
-			ToggleTextConstraint.MaxTextSize = 22
-			
-			ToggleButton.MouseEnter:Connect(function()
-				ToggleButton.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
-			end)
-
-			ToggleButton.MouseButton1Down:Connect(function()
-				ToggleButton.BackgroundColor3 = Color3.fromRGB(20, 20, 23)
-			end)
-
-			ToggleButton.MouseLeave:Connect(function()
-				ToggleButton.BackgroundColor3 = Color3.fromRGB(23, 23, 26)
-			end)
-
-			ToggleButton.MouseButton1Up:Connect(function()
-				ToggleButton.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
-			end)
-
-			InfoButton.MouseEnter:Connect(function()
-				local mouse = UIS:GetMouseLocation()
-				local inset = game:GetService("GuiService"):GetGuiInset()
-				mouse = mouse - inset
-
-				local posX = (mouse.X - InfoMain.Parent.AbsolutePosition.X) / UIScale.Scale
-				local posY = (mouse.Y - InfoMain.Parent.AbsolutePosition.Y - 50) / UIScale.Scale
-
-				InfoMain.Position = UDim2.new(0, posX, 0, posY)
-				InfoText.Text = info
-				InfoMain.Visible = true
-			end)
-
-			InfoButton.MouseLeave:Connect(function()
-				InfoMain.Visible = false
-			end)
-			
-			local function switchState(newState)
-				items[tab][2][order] = {"Toggle", name, info, newState, callback}
-				
-				pcall(function()
-					callback(newState)
-				end)
-
-				local stateSwitchTween = TweenService:Create(
-					ToggleStateButton,
-					TweenInfo.new(.2, Enum.EasingStyle.Circular, Enum.EasingDirection.InOut),
-					{
-						["BackgroundColor3"] = (newState and Color3.fromRGB(67, 231, 100)) or Color3.fromRGB(231, 72, 72),
-						["Position"] = (newState and UDim2.new(0, 0, 0, 0)) or UDim2.new(.5, 0, 0, 0)
-					}
-				)
-				stateSwitchTween:Play()
+			if activeTab == tab then
+				createToggle(name, info, initialState, callback, tab, itemIndex)
 			end
-			
-			ToggleButton.MouseButton1Click:Connect(function()
-				state = not state
-				switchState(state)
-			end)
-			
-			ToggleStateButton.MouseButton1Click:Connect(function()
-				state = not state
-				switchState(state)
-			end)
-			
-			switchState(state)
 			
 			return toggle
 		end
 		
 		return tab
 	end
-	
-	if #items > 0 then
-		switchTabs(items[1], items[1][2])
-	end
-	
-	OpenUI()
 	
 	return window
 end
