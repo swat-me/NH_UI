@@ -21,7 +21,7 @@ local function create(class, props)
 end
 
 local function shortenText(text, maxChars)
-	local chars = string.split(text)
+	local chars = string.split(text, "")
 	
 	if #chars > maxChars then
 		local final = ""
