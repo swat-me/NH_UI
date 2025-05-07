@@ -821,9 +821,9 @@ function NH_UI:NewWindow(name: string, icon: string, bind: string)
 			
 			local size
 			if itemIndex == #items[tab] then
-				size = 2 * itemsFrame.CanvasPosition.Y + 1 * itemsFrame.AbsoluteWindowSize.X
+				size = 105 * #items[tab] + 190
 			elseif #items[tab] - itemIndex < 2 then
-				size = (2 * itemsFrame.CanvasPosition.Y + 1 * itemsFrame.AbsoluteWindowSize.X) - 115
+				size = 105 * #items[tab] + 85
 			else
 				itemsFrame.AutomaticCanvasSize = Enum.AutomaticSize.Y
 				return
