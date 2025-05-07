@@ -1065,6 +1065,10 @@ function NH_UI:NewWindow(name: string, icon: string, bind: string)
 						callback(items[tab][itemIndex].selected)
 					end)
 					
+					if not table.find(options, items[tab][itemIndex].selected[1]) then
+						table.remove(items[tab][itemIndex].selected, 1)
+					end
+					
 					checkbox.Image = (table.find(items[tab][itemIndex].selected, option) and "rbxassetid://106302518855268") or "rbxassetid://74919013831157"
 					selectedText.Text = shortenText(items[tab][itemIndex].selected[1] or "", 7)
 				end)
