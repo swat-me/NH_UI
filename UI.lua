@@ -59,9 +59,7 @@ function NH_UI:NewWindow(name: string, icon: string, bind: string)
 	if not success then
 		windowParent = game.Players.LocalPlayer.PlayerGui
 	end
-	
-	print(windowParent, windowName)
-	
+		
 	-- Create window
 	local screenGui = create("ScreenGui", {
 		Name = windowName,
@@ -779,7 +777,6 @@ function NH_UI:NewWindow(name: string, icon: string, bind: string)
 		end)
 
 		local function switchState(newState)
-			print(items[tab][itemIndex])
 			items[tab][itemIndex].state = newState
 
 			pcall(function()
@@ -1163,7 +1160,6 @@ function NH_UI:NewWindow(name: string, icon: string, bind: string)
 			
 			-- Load tabs items
 			for i, item in ipairs(items[tab]) do
-				print(items[tab])
 				if item.type == "Button" then
 					createButton(item.name, item.info, item.callback)
 				elseif item.type == "Toggle" then
