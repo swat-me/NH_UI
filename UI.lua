@@ -20,6 +20,21 @@ local function create(class, props)
 	return instance
 end
 
+local function shortenText(text, maxChars)
+	local chars = string.split(text)
+	
+	if #chars > maxChars then
+		local final = ""
+		for i=1, maxChars do
+			final = final.. chars[i]
+		end
+		
+		return final.. "..."
+	else
+		return text
+	end
+end
+
 function NH_UI:NewWindow(name: string, icon: string, bind: string)
 	local window = {}
 	
@@ -215,6 +230,7 @@ function NH_UI:NewWindow(name: string, icon: string, bind: string)
 		Position = UDim2.new(.234, 0, .113, 0),
 		Size = UDim2.new(.76, 0, .887, 0),
 		CanvasSize = UDim2.new(0, 0, 0, 0),
+		AutomaticCanvasSize = Enum.AutomaticSize.Y,
 		ScrollBarThickness = 4,
 		Parent = background
 	})
@@ -494,28 +510,6 @@ function NH_UI:NewWindow(name: string, icon: string, bind: string)
 	minimize.MouseButton1Click:Connect(function()	
 		minimizeAndExpand(background.Visible)
 	end)
-	
-	--local function updateCanvasSize(scrollingFrame, listLayout)
-	--	task.defer(function()
-	--		local contentHeight = listLayout.AbsoluteContentSize.Y
-	--		local visibleHeight = scrollingFrame.AbsoluteSize.Y
-	--		if contentHeight > visibleHeight then
-	--			scrollingFrame.CanvasSize = UDim2.new(0, 0, 0, contentHeight)
-	--		else
-	--			scrollingFrame.CanvasSize = UDim2.new(0, 0, 0, visibleHeight + 1)
-	--		end
-	--	end)
-	--end
-
-	--tabLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-	--	updateCanvasSize(tabsFrame, tabLayout)
-	--end)
-	--tabsFrame.ChildAdded:Connect(function()
-	--	updateCanvasSize(tabsFrame, tabLayout)
-	--end)
-	--tabsFrame.ChildRemoved:Connect(function()
-	--	updateCanvasSize(tabsFrame, tabLayout)
-	--end)
 
 	local items = {}
 	
@@ -815,6 +809,341 @@ function NH_UI:NewWindow(name: string, icon: string, bind: string)
 		switchState(items[tab][itemIndex].state)
 	end
 	
+	-- Dropdowns
+	local function dropdownCanvasFix(optionsFrame, tab, itemIndex)
+		if optionsFrame.Visible then
+			itemsFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
+			itemsFrame.AutomaticCanvasSize = Enum.AutomaticSize.Y
+			
+			task.wait()
+			
+			itemsFrame.AutomaticCanvasSize = Enum.AutomaticSize.None
+			
+			local size
+			if itemIndex == #items[tab] then
+				size = 2 * itemsFrame.CanvasPosition.Y + 1 * itemsFrame.AbsoluteWindowSize.X
+			elseif #items[tab] - itemIndex < 2 then
+				size = (2 * itemsFrame.CanvasPosition.Y + 1 * itemsFrame.AbsoluteWindowSize.X) - 115
+			else
+				itemsFrame.AutomaticCanvasSize = Enum.AutomaticSize.Y
+				return
+			end
+						
+			itemsFrame.CanvasSize = UDim2.new(0, 0, 0, size)
+			itemsFrame.CanvasPosition = Vector2.new(0, size)
+		else
+			itemsFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
+			itemsFrame.AutomaticCanvasSize = Enum.AutomaticSize.Y
+		end
+	end
+	
+	local function createDropdown(name, info, optionType, options, selected, callback, tab, itemIndex)
+		local dropdownFrame = create("ImageLabel", {
+			Name = name,
+			BackgroundTransparency = 1,
+			Image = "rbxassetid://14001321443",
+			ImageColor3 = Color3.fromRGB(18,18,18),
+			ScaleType = Enum.ScaleType.Slice,
+			SliceCenter = Rect.new(150, 150, 150, 150),
+			SliceScale = 1,
+			Parent = itemsFrame
+		})
+		
+		create("UIAspectRatioConstraint", {
+			AspectRatio = 8.18,
+			Parent = dropdownFrame
+		})
+		
+		local selectedButton = create("ImageButton", {
+			AnchorPoint = Vector2.new(0, .5),
+			AutoButtonColor = false,
+			BackgroundColor3 = Color3.fromRGB(39, 40, 44),
+			Position = UDim2.new(.691, 0, .5, 0),
+			Size = UDim2.new(.265, 0, .561, 0),
+			Image = "",
+			ZIndex = 2,
+			Parent = dropdownFrame
+		}) 
+		
+		create("UICorner", {
+			CornerRadius = UDim.new(.25, 0),
+			Parent = selectedButton
+		})
+		
+		create("UIStroke", {
+			Thickness = 2,
+			Parent = selectedButton
+		})
+		
+		local arrow = create("ImageLabel", {
+			AnchorPoint = Vector2.new(.5, .5),
+			BackgroundTransparency = 1,
+			Position = UDim2.new(.9, 0, .5, 0),
+			Size = UDim2.new(.075, 0, .404, 0),
+			Image = "rbxassetid://99975223526055",
+			ZIndex = 2,
+			Parent = selectedButton
+		})
+		
+		font.Weight = Enum.FontWeight.Medium
+		font.Style = Enum.FontStyle.Normal
+		local selectedText = create("TextLabel", {
+			BackgroundTransparency = 1,
+			Position = UDim2.new(.108, 0, 0, 0),
+			Size = UDim2.new(.692, 0, 1, 0),
+			FontFace = font,
+			Text = (typeof(selected) == "string" and shortenText(selected, 7)) or shortenText(selected[1], 7),
+			TextColor3 = Color3.fromRGB(136, 136, 136),
+			TextScaled = true,
+			TextXAlignment = Enum.TextXAlignment.Left,
+			ZIndex = 2,
+			Parent = selectedButton
+		})
+		
+		create("UITextSizeConstraint", {
+			MaxTextSize = 18,
+			Parent = selectedText
+		})
+		
+		local infoButton = create("TextButton", {
+			Name = "Info",
+			BackgroundColor3 = Color3.fromRGB(34, 39, 39),
+			Position = UDim2.new(.959, 0, .011, 0),
+			Size = UDim2.new(.035, 0, .279, 0),
+			Font = Enum.Font.Roboto,
+			Text = "?",
+			TextColor3 = Color3.fromRGB(190, 190, 190),
+			TextScaled = true,
+			ZIndex = 2,
+			AutoButtonColor = false,
+			Visible = (info ~= "" and true) or false,
+			Parent = dropdownFrame,
+		})
+
+		create("UICorner", {
+			CornerRadius = UDim.new(1, 0),
+			Parent = infoButton
+		})
+		
+		local dropdownButton = create("TextButton", {
+			Name = "Button",
+			AnchorPoint = Vector2.new(.5, .5),
+			AutoButtonColor = false,
+			BackgroundColor3 = Color3.fromRGB(23, 23, 26),
+			Position = UDim2.new(.5, 0, .5, 0),
+			Size = UDim2.new(.965, 0, .726, 0),
+			Text = "",
+			Parent = dropdownFrame
+		})
+
+		create("UICorner", {
+			CornerRadius = UDim.new(.15, 0),
+			Parent = dropdownButton
+		})
+
+		create("UIStroke", {
+			Color = Color3.fromRGB(6, 6, 6),
+			Thickness = 4,
+			Parent = dropdownButton
+		})
+		
+		local dropdownText = create("TextLabel", {
+			Name = "Title",
+			AnchorPoint = Vector2.new(.5, .5),
+			BackgroundTransparency = 1,
+			Position = UDim2.new(.369, 0, .5, 0),
+			Size = UDim2.new(.68, 0, .95, 0),
+			FontFace = font,
+			Text = name,
+			TextColor3 = Color3.fromRGB(214, 214, 214),
+			TextScaled = true,
+			Parent = dropdownButton
+		})
+
+		create("UITextSizeConstraint", {
+			MaxTextSize = 22,
+			Parent = dropdownText
+		})
+		
+		local optionsFrame = create("ScrollingFrame", {
+			Name = "Options",
+			AutomaticSize = (#options <= 4 and Enum.AutomaticSize.Y) or Enum.AutomaticSize.None,
+			BackgroundColor3 = Color3.fromRGB(39, 40, 44),
+			Position = UDim2.new(.641, 0, .83, 0),
+			Size = UDim2.new(.364, 0, 0, 196),
+			AutomaticCanvasSize = Enum.AutomaticSize.Y,
+			CanvasSize = UDim2.new(0, 0, 0, 0),
+			ScrollBarImageColor3 = Color3.fromRGB(13, 13, 13),
+			ScrollBarThickness = 4,
+			Visible = false,
+			ZIndex = 3,
+			Parent = dropdownFrame
+		})
+		
+		create("UICorner", {
+			CornerRadius = UDim.new(0, 10),
+			Parent = optionsFrame
+		})
+		
+		create("UIListLayout", {Parent = optionsFrame})
+		
+		create("UIPadding", {
+			PaddingLeft = UDim.new(.05, 0),
+			Parent = optionsFrame
+		})
+		
+		create("UIStroke", {
+			Thickness = 2,
+			Parent = optionsFrame
+		})
+		
+		for _, option in pairs(options) do
+			if optionType == "Single" then
+				local optionButton = create("TextButton", {
+					BackgroundTransparency = 1,
+					Size = UDim2.new(.95, 0, 0, 45),
+					ZIndex = 4,
+					FontFace = font,
+					Text = option,
+					TextColor3 = Color3.fromRGB(136, 136, 136),
+					TextScaled = true,
+					TextXAlignment = Enum.TextXAlignment.Left,
+					Parent = optionsFrame
+				})
+				
+				create("UITextSizeConstraint", {
+					MaxTextSize = 18,
+					Parent = optionButton
+				})
+				
+				optionButton.MouseButton1Click:Connect(function()
+					items[tab][itemIndex].selected = option
+					pcall(function()
+						callback(option)
+					end)
+					
+					selectedText.Text = shortenText(option, 7)
+					optionsFrame.Visible = false
+				end)
+				
+			elseif optionType == "Multiple" then
+				if typeof(items[tab][itemIndex].selected) == "string" then items[tab][itemIndex].selected = {items[tab][itemIndex].selected} end
+				
+				local optionButton = create("TextButton", {
+					BackgroundTransparency = 1,
+					Size = UDim2.new(.8, 0, 0, 45),
+					ZIndex = 4,
+					FontFace = font,
+					Text = option,
+					TextColor3 = Color3.fromRGB(136, 136, 136),
+					TextScaled = true,
+					TextXAlignment = Enum.TextXAlignment.Left,
+					Parent = optionsFrame
+				})
+
+				create("UITextSizeConstraint", {
+					MaxTextSize = 18,
+					Parent = optionButton
+				})
+				
+				local checkbox = create("ImageLabel", {
+					AnchorPoint = Vector2.new(0, .5),
+					BackgroundTransparency = 1,
+					Position = UDim2.new(1.03, 0, .5, 0),
+					Size = UDim2.new(.205, 0, .8, 0),
+					ZIndex = 4,
+					Image = (table.find(items[tab][itemIndex].selected, option) and "rbxassetid://106302518855268") or "rbxassetid://74919013831157",
+					ImageColor3 = Color3.fromRGB(168, 168, 168),
+					Parent = optionButton
+				})
+				
+				optionButton.MouseButton1Click:Connect(function()
+					if not table.find(items[tab][itemIndex].selected, option) then
+						table.insert(items[tab][itemIndex].selected, option)
+					else
+						table.remove(items[tab][itemIndex].selected, table.find(items[tab][itemIndex].selected, option))
+					end
+					
+					pcall(function()
+						callback(items[tab][itemIndex].selected)
+					end)
+					
+					checkbox.Image = (table.find(items[tab][itemIndex].selected, option) and "rbxassetid://106302518855268") or "rbxassetid://74919013831157"
+					selectedText.Text = shortenText(items[tab][itemIndex].selected[1] or "", 7)
+				end)
+			end
+		end
+		
+		dropdownButton.MouseEnter:Connect(function()
+			dropdownButton.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
+		end)
+
+		dropdownButton.MouseButton1Down:Connect(function()
+			dropdownButton.BackgroundColor3 = Color3.fromRGB(20, 20, 23)
+		end)
+
+		dropdownButton.MouseLeave:Connect(function()
+			dropdownButton.BackgroundColor3 = Color3.fromRGB(23, 23, 26)
+		end)
+
+		dropdownButton.MouseEnter:Connect(function()
+			dropdownButton.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
+		end)
+
+		dropdownButton.MouseButton1Down:Connect(function()
+			dropdownButton.BackgroundColor3 = Color3.fromRGB(20, 20, 23)
+		end)
+
+		dropdownButton.MouseLeave:Connect(function()
+			dropdownButton.BackgroundColor3 = Color3.fromRGB(23, 23, 26)
+		end)
+
+		dropdownButton.MouseButton1Up:Connect(function()
+			dropdownButton.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
+		end)
+
+		infoButton.MouseEnter:Connect(function()
+			local mouse = UIS:GetMouseLocation()
+			local inset = game:GetService("GuiService"):GetGuiInset()
+			mouse = mouse - inset
+
+			local posX = (mouse.X - infoMain.Parent.AbsolutePosition.X) / UIScale.Scale
+			local posY = (mouse.Y - infoMain.Parent.AbsolutePosition.Y - 50) / UIScale.Scale
+
+			infoMain.Position = UDim2.new(0, posX, 0, posY)
+			infoText.Text = info
+			infoMain.Visible = true
+		end)
+
+		infoButton.MouseLeave:Connect(function()
+			infoMain.Visible = false
+		end)
+		
+		dropdownButton.MouseButton1Click:Connect(function()
+			optionsFrame.Visible = not optionsFrame.Visible
+			optionsFrame.AutomaticSize = (#options <= 4 and Enum.AutomaticSize.Y) or Enum.AutomaticSize.None
+			dropdownCanvasFix(optionsFrame, tab, itemIndex)
+			
+			for _, item in pairs(itemsFrame:GetChildren()) do
+				if item:FindFirstChild("Options") and item ~= dropdownFrame then
+					item.Options.Visible = false
+				end
+			end
+		end)
+		
+		selectedButton.MouseButton1Click:Connect(function()
+			optionsFrame.Visible = not optionsFrame.Visible
+			optionsFrame.AutomaticSize = (#options <= 4 and Enum.AutomaticSize.Y) or Enum.AutomaticSize.None
+			dropdownCanvasFix(optionsFrame, tab, itemIndex)
+
+			for _, item in pairs(itemsFrame:GetChildren()) do
+				if item:FindFirstChild("Options") and item ~= dropdownFrame then
+					item.Options.Visible = false
+				end
+			end
+		end)
+	end
+	
 	-- Tabs
 	local activeTab = nil
 	function window:NewTab(tabName: string, info: string)
@@ -839,6 +1168,8 @@ function NH_UI:NewWindow(name: string, icon: string, bind: string)
 					createButton(item.name, item.info, item.callback)
 				elseif item.type == "Toggle" then
 					createToggle(item.name, item.info, item.state, item.callback, tab, i)
+				elseif item.type == "Dropdown" then
+					createDropdown(item.name, item.info, item.optionType, item.options, item.selected, item.callback, tab, i)
 				end
 			end
 		end
@@ -939,6 +1270,27 @@ function NH_UI:NewWindow(name: string, icon: string, bind: string)
 			end
 			
 			return toggle
+		end
+		
+		function tab:NewDropdown(name: string, info: string, optionType: string, options: SharedTable, baseText: string, callback: () -> ())
+			local dropdown = {}
+			table.insert(items[tab], {
+				type = "Dropdown",
+				name = name,
+				info = info,
+				optionType = optionType,
+				options = options,
+				selected = baseText or "",
+				callback = callback
+			})
+			
+			local itemIndex = #items[tab]
+			
+			if activeTab == tab then
+				createDropdown(name, info, optionType, options, baseText, callback, tab, itemIndex)
+			end
+			
+			return dropdown
 		end
 		
 		return tab
